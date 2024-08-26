@@ -69,7 +69,7 @@ def line_search_wolfe(func,
                       constraints,
                       c1=1e-4, 
                       c2=0.9, 
-                      t_init=0.8):
+                      t_init=0.5):
     """
     Control del tamaño de paso usando las condiciones de Wolfe.
     
@@ -94,13 +94,13 @@ def line_search_wolfe(func,
     r2 = c2 * np.dot(grad_f_x, p)
     #print(r2, 'r2')
     while not flag:
-        debug(t, 't')
-        debug(x + t * p, 'x + t * p')
-        if l1 > r1: #or not constrained(x + t * p, constraints):
+        #debug(t, 't')
+        #debug(x + t * p, 'x + t * p')
+        if l1 > r1 or not constrained(x + t * p, constraints):
             #debug(x + t * p, 'x plus step direction')
             
-            #if t < 1e-10:
-            #    break
+            if t < 1e-2:
+                break
             t *= 0.5
         elif l2 < r2:
             #debug(, 'larger')
@@ -111,14 +111,14 @@ def line_search_wolfe(func,
             flag = True
 
         l1 = evaluate(func, x + t * p, my_actual_symbs)
-        print('------------------------------------------------')
-        print(l1, 'l1')
+        #print('------------------------------------------------')
+        #print(l1, 'l1')
         r1 = evaluate(func, x, my_actual_symbs) + c1 * t * np.dot(grad_f_x, p)
-        print(r1, 'r1')
+        #print(r1, 'r1')
         l2 = np.dot(gradient(func, x + t * p, my_actual_symbs), p)
-        print(l2, 'l2')
+        #print(l2, 'l2')
         r2 = c2 * np.dot(grad_f_x, p)
-        print(r2, 'r2')
+        #print(r2, 'r2')
             
     return t
 
@@ -181,13 +181,15 @@ def newton(f,
 
     #debug(tol >= np.linalg.norm(gradient(f, x, my_actual_symbs)), 'tol >= gradient norm')
     #debug(tol, 'tol')
-    #debug(np.linalg.norm(gradient(f, x, my_actual_symbs)), 'norm grad')
+    
 
     while tol < np.linalg.norm(gradient(f, x, my_actual_symbs)):
         debug(c, 'iteration')
+        debug(np.linalg.norm(gradient(f, x, my_actual_symbs)), 'norm grad')
         grad1 = gradient(f, x, my_actual_symbs)
         grad2 = gradient2(f, x, my_actual_symbs)
         debug(x, 'x values')
+        
         #debug(grad1, 'gradient')
         #debug(grad2, 'gradient 2')
         inv_grad2 = -np.linalg.inv(grad2)
@@ -195,10 +197,11 @@ def newton(f,
         p = np.dot(inv_grad2, grad1)
         debug(p, 'direction p')
         t = line_search_wolfe(f, my_actual_symbs, x, p, constraints)
+        debug(t, 't')
         
         if not constrained(x + t * p, constraints):
             break
-        x = x + p
+        x = x + t * p
         
         #debug(np.linalg.norm(grad1), 'gradient norm')
         c += 1
@@ -251,12 +254,12 @@ expression2 = (4 - 2.1 * x1 ** 2 + (x1 ** 4) / 3) * x1 ** 2 + x1 * x2 + \
 expression3 = 10 * 2 + (x1 ** 2 - 10 * cos(2 * pi * x1)) + \
     (x2 ** 2 - 10 * cos(2 * pi * x2))
 
-x_optimal1 = gradient_descent(expression1, [x1, x2], x_init1, constraints1)
-x_optimal2 = gradient_descent(expression2, [x1, x2], x_init2, constraints2)
-x_optimal3 = gradient_descent(expression3, [x1, x2], x_init3, constraints3)
-print(f"gradient descent optimal point for expression 1: ", x_optimal1)
-print(f"gradient descent optimal point for expression 2: ", x_optimal2)
-print(f"gradient descent optimal point for expression 3: ", x_optimal3)
+# x_optimal1 = gradient_descent(expression1, [x1, x2], x_init1, constraints1)
+# x_optimal2 = gradient_descent(expression2, [x1, x2], x_init2, constraints2)
+# x_optimal3 = gradient_descent(expression3, [x1, x2], x_init3, constraints3)
+# print(f"gradient descent optimal point for expression 1: ", x_optimal1)
+# print(f"gradient descent optimal point for expression 2: ", x_optimal2)
+# print(f"gradient descent optimal point for expression 3: ", x_optimal3)
 
 x_optimal12 = newton(expression1, [x1, x2], 1e-6, x_init1, constraints1)
 x_optimal22 = newton(expression2, [x1, x2], 1e-6, x_init2, constraints2)
@@ -265,9 +268,9 @@ print(f"newton optimal point for expression 1: ", x_optimal12)
 print(f"newton optimal point for expression 2: ", x_optimal22)
 print(f"newton optimal point for expression 3: ", x_optimal32)
 
-x_optimal13 = hill_climber(expression1, x_init1, [x1, x2], constraints1)
-x_optimal23 = hill_climber(expression2, x_init2, [x1, x2], constraints2)
-x_optimal33 = hill_climber(expression3, x_init3, [x1, x2], constraints3)
-print(f"hill optimal point for expression 1: ", x_optimal13)
-print(f"hill optimal point for expression 2: ", x_optimal23)
-print(f"hill optimal point for expression 3: ", x_optimal33)
+# x_optimal13 = hill_climber(expression1, x_init1, [x1, x2], constraints1)
+# x_optimal23 = hill_climber(expression2, x_init2, [x1, x2], constraints2)
+# x_optimal33 = hill_climber(expression3, x_init3, [x1, x2], constraints3)
+# print(f"hill optimal point for expression 1: ", x_optimal13)
+# print(f"hill optimal point for expression 2: ", x_optimal23)
+# print(f"hill optimal point for expression 3: ", x_optimal33)
