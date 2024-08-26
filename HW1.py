@@ -96,11 +96,11 @@ def line_search_wolfe(func,
     while not flag:
         debug(t, 't')
         debug(x + t * p, 'x + t * p')
-        if l1 > r1 or not constrained(x + t * p, constraints):
+        if l1 > r1: #or not constrained(x + t * p, constraints):
             #debug(x + t * p, 'x plus step direction')
             
-            if t < 1e-10:
-                break
+            #if t < 1e-10:
+            #    break
             t *= 0.5
         elif l2 < r2:
             #debug(, 'larger')
@@ -190,7 +190,7 @@ def newton(f,
         debug(x, 'x values')
         #debug(grad1, 'gradient')
         #debug(grad2, 'gradient 2')
-        inv_grad2 = np.linalg.inv(grad2)
+        inv_grad2 = -np.linalg.inv(grad2)
         debug(inv_grad2, 'inverse grad 2')
         p = np.dot(inv_grad2, grad1)
         debug(p, 'direction p')
@@ -198,10 +198,39 @@ def newton(f,
         
         if not constrained(x + t * p, constraints):
             break
-        x = x + t * p
+        x = x + p
         
         #debug(np.linalg.norm(grad1), 'gradient norm')
         c += 1
+    
+    return x
+
+def hill_climber(func, 
+                 x_init, 
+                 my_actual_symbs, 
+                 constraints, 
+                 step_size=0.01, 
+                 max_iter=1000):
+    """
+    Continuous Hill Climber method for single objective minimization problems.
+    
+    :param func: Objective function to minimize.
+    :param x_init: Initial guess.
+    :param step_size: Size of the perturbation applied at each step.
+    :param max_iter: Maximum number of iterations.
+    :return: x_optimal: The optimal point found.
+    """
+    x = x_init
+    f_val = evaluate(func, x, my_actual_symbs)
+    
+    for _ in range(max_iter):
+        # Generate a random step
+        x_new = x + step_size * (2 * np.random.rand(len(x)) - 1)
+        f_val_new = evaluate(func, x_new, my_actual_symbs)
+        
+        # If the new solution is better, update
+        if f_val_new < f_val:
+            x, f_val = x_new, f_val_new
     
     return x
 
@@ -222,16 +251,23 @@ expression2 = (4 - 2.1 * x1 ** 2 + (x1 ** 4) / 3) * x1 ** 2 + x1 * x2 + \
 expression3 = 10 * 2 + (x1 ** 2 - 10 * cos(2 * pi * x1)) + \
     (x2 ** 2 - 10 * cos(2 * pi * x2))
 
-#x_optimal1 = gradient_descent(expression1, [x1, x2], x_init1, constraints1)
-#x_optimal2 = gradient_descent(expression2, [x1, x2], x_init2, constraints2)
-#x_optimal3 = gradient_descent(expression3, [x1, x2], x_init3, constraints3)
-#print(f"gradient descent optimal point for expression 1: ", x_optimal1)
-#print(f"gradient descent optimal point for expression 2: ", x_optimal2)
-#print(f"gradient descent optimal point for expression 3: ", x_optimal3)
+x_optimal1 = gradient_descent(expression1, [x1, x2], x_init1, constraints1)
+x_optimal2 = gradient_descent(expression2, [x1, x2], x_init2, constraints2)
+x_optimal3 = gradient_descent(expression3, [x1, x2], x_init3, constraints3)
+print(f"gradient descent optimal point for expression 1: ", x_optimal1)
+print(f"gradient descent optimal point for expression 2: ", x_optimal2)
+print(f"gradient descent optimal point for expression 3: ", x_optimal3)
 
-#x_optimal12 = newton(expression1, [x1, x2], 1e-6, x_init1, constraints1)
+x_optimal12 = newton(expression1, [x1, x2], 1e-6, x_init1, constraints1)
 x_optimal22 = newton(expression2, [x1, x2], 1e-6, x_init2, constraints2)
-#x_optimal32 = newton(expression3, [x1, x2], 1e-6, x_init3, constraints3)
-#print(f"newton optimal point for expression 1: ", x_optimal12)
+x_optimal32 = newton(expression3, [x1, x2], 1e-6, x_init3, constraints3)
+print(f"newton optimal point for expression 1: ", x_optimal12)
 print(f"newton optimal point for expression 2: ", x_optimal22)
-#print(f"newton optimal point for expression 3: ", x_optimal32)
+print(f"newton optimal point for expression 3: ", x_optimal32)
+
+x_optimal13 = hill_climber(expression1, x_init1, [x1, x2], constraints1)
+x_optimal23 = hill_climber(expression2, x_init2, [x1, x2], constraints2)
+x_optimal33 = hill_climber(expression3, x_init3, [x1, x2], constraints3)
+print(f"hill optimal point for expression 1: ", x_optimal13)
+print(f"hill optimal point for expression 2: ", x_optimal23)
+print(f"hill optimal point for expression 3: ", x_optimal33)
