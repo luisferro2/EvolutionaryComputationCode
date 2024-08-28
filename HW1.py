@@ -75,7 +75,7 @@ def line_search_wolfe(func,
                       constraints,
                       c1=1e-4, 
                       c2=0.9, 
-                      t_init=250):
+                      t_init=0.8):
     """
     Control del tamaño de paso usando las condiciones de Wolfe.
     
@@ -221,7 +221,7 @@ def hill_climber(func,
                  my_actual_symbs, 
                  constraints, 
                  step_size=0.01, 
-                 max_iter=1000):
+                 max_iter=10000):
     """
     Continuous Hill Climber method for single objective minimization problems.
     
@@ -245,7 +245,7 @@ def hill_climber(func,
             x, f_val = x_new, f_val_new
             x_list += [x]
     
-    return x_list
+    return x_list, max_iter
 
 
 x_init1 = np.array([-4.0, 4.0])
@@ -305,19 +305,29 @@ def plot_contour(func, constraints, x_list):
     linee.set_color('black')
     plt.legend()
     plt.show()
+
+def print_4_table(func, final_points, algo, min_x, iters):
+
+    titles = 'Algorithm & Point Found & Evaluation & Optimal point & Real Minimum & 2-norm error between points & iterations'
+    
+    curr_str = algo + ' & ' + str(final_points) + ' & ' +\
+        str(func1(final_points)) + ' & ' + str(min_x) + ' & ' + str(func(min_x)) + \
+        ' & ' + str(np.linalg.norm(min1 - final_points)) + ' & ' + str(iters)
+            
+    debug(curr_str, titles)
 # 0.8 for all 3 to work 
-# t = 10
+# t = 10 finds faster
 #x_list1 = gradient_descent(expression1, [x1, x2], x_init1, constraints1)
-# t = 8.1
+# t = 8.1 finds faster
 #x_list2 = gradient_descent(expression2, [x1, x2], x_init2, constraints2)
-# t = 1
+# t = 1 finds minimum
 #x_list3 = gradient_descent(expression3, [x1, x2], x_init3, constraints3)
 # print(f"gradient descent optimal point for expression 1: ", x_list1)
 # print(f"gradient descent optimal point for expression 2: ", x_list2)
 # print(f"gradient descent optimal point for expression 3: ", x_list3)
 #debug(len(x_list2), 'iterations')
-#plot_contour(func1, constraints1, x_list1)
-#plot_contour(func2, constraints2, x_list3)
+# plot_contour(func1, constraints1, x_list1)
+# plot_contour(func2, constraints2, x_list2)
 #plot_contour(func3, constraints3, x_list3)
 
 # 1 for all to work (without wolfe)
@@ -335,22 +345,16 @@ def plot_contour(func, constraints, x_list):
 #plot_contour(func2, constraints2, x_list22)
 #plot_contour(func3, constraints3, x_list32)
 
-x_list13 = hill_climber(expression1, x_init1, [x1, x2], constraints1)
+x_list13, iters13 = hill_climber(expression1, x_init1, [x1, x2], constraints1)
 #x_list23 = hill_climber(expression2, x_init2, [x1, x2], constraints2)
 #x_list33 = hill_climber(expression3, x_init3, [x1, x2], constraints3)
-final_points = x_list13[-1]
-debug(f"hill optimal point for expression 1: ", final_points)
-debug(min1, 'coordinate for real minimum')
-debug(np.linalg.norm(min1 - final_points), '2-norm error')
-debug(func1(final_points), 'hill function value')
-debug(func1(min1), 'real minimum value')
-debug(np.abs(func1(final_points) - func1(min1)), 'absolute error between mins')
-
 # print(f"hill optimal point for expression 2: ", x_list23)
 # print(f"hill optimal point for expression 3: ", x_list33)
 # debug(len(x_list13), 'iterations')
 plot_contour(func1, constraints1, x_list13)
 #plot_contour(func2, constraints2, x_list23)
 #plot_contour(func3, constraints3, x_list33)
+print_4_table(func1, x_list13[-1], 'hill climber', min1, iters13)
+
 
 
