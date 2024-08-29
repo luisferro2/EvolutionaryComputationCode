@@ -1,8 +1,8 @@
 """
 Code for homework #1 Evolutionary Computing Class
 Authors:
-Luis Ignacio Ferro Salinas
-Iván
+Luis Ignacio Ferro Salinas A01378248
+Iván Miguel García López
 """
 
 import numpy as np
@@ -12,8 +12,10 @@ from scipy import optimize
 
 # Global minimums obtained via Wolfram Alpha.
 min1 = [np.array([0, 0])]
-min2 = [np.array([-0.08984201310031806242249056062, 0.7126564030207396333972658142]),
-        np.array([0.08984201310031806242249056062, -0.7126564030207396333972658142])]
+min2 = [
+    np.array([-0.08984201310031806242249056062, 0.7126564030207396333972658142]),
+    np.array([0.08984201310031806242249056062, -0.7126564030207396333972658142]),
+]
 min3 = [np.array([0, 0])]
 
 
@@ -88,15 +90,15 @@ def line_search_wolfe(
     func, my_actual_symbs, x, p, constraints, c1=1e-4, c2=0.9, t_init=1
 ):
     """
-    Control del tamaño de paso usando las condiciones de Wolfe.
+    Step size control using Wolfe conditions.
 
-    :param func: Función objetivo a minimizar.
-    :param x: Solución actual.
-    :param p: Dirección de descenso.
-    :param c1: Constante para la primera condición de Wolfe.
-    :param c2: Constante para la segunda condición de Wolfe.
-    :param t_init: Paso inicial.
-    :return: t: Tamaño de paso óptimo.
+    :param func: Objective function to minimize.
+    :param x: Current solution.
+    :param p: Direction of descent.
+    :param c1: Constant for the first Wolfe condition.
+    :param c2: Constant for the second Wolfe condition.
+    :param t_init: Initial step.
+    :return: t: Optimal step size.
     """
     t = t_init
     flag = False
@@ -144,14 +146,13 @@ def gradient_descent(
     func, my_actual_symbs, x_init, constraints, max_iter=1000, tol=1e-6, t_init=1
 ):
     """
-    Método de descenso de gradiente con control del tamaño de paso usando condiciones
-    de Wolfe.
+    Gradient descent method with step size control using Wolfe conditions.
 
-    :param func: Función objetivo a minimizar.
-    :param x_init: Suposición inicial.
-    :param max_iter: Número máximo de iteraciones.
-    :param tol: Tolerancia para la convergencia.
-    :return: x_optimal: El punto óptimo encontrado.
+    :param func: Objective function to minimize.
+    :param x_init: Initial values x.
+    :param max_iter: Maximum number of iterations.
+    :param tol: Tolerance for convergence.
+    :return: x_optimal: Optimal point found.
     """
     x_list = [x_init]
 
@@ -159,6 +160,10 @@ def gradient_descent(
     # debug(x, 'x')
 
     for i in range(max_iter):
+        # 0-indexed
+        if i >= 19:
+            break
+
         grad = gradient(func, x, my_actual_symbs)
 
         # print(np.linalg.norm(grad), 'grad norm')
@@ -178,15 +183,23 @@ def gradient_descent(
     return x_list, i + 1
 
 
-def newton(f, my_actual_symbs, tol, x_init, constraints, with_wolfe=False, t_init=None):
+def newton(
+    f,
+    my_actual_symbs,
+    tol,
+    x_init,
+    constraints,
+    with_wolfe=False,
+    t_init=None,
+    verbose=False,
+):
     """
-    Calcula el mínimo de la función f usando el
-    método de Newton.
+    Calculates minimum of function f using Newton's method.
 
-    :param f: Función objetivo a minimizar.
-    :param tol: Tolerancia para la convergencia.
-    :param x_init: Valor inicial de las variables independientes.
-    :return: x: Los parámetros de la solución.
+    :param f: Objective function to minimize.
+    :param tol: Tolerance for convergence.
+    :param x_init: Initial value for independent variables.
+    :return: x: Values of the solution.
     """
 
     x_list = [x_init]
@@ -197,31 +210,49 @@ def newton(f, my_actual_symbs, tol, x_init, constraints, with_wolfe=False, t_ini
     # debug(tol, 'tol')
 
     while tol < np.linalg.norm(gradient(f, x, my_actual_symbs)):
-        # debug(c, 'iteration')
-        # debug(np.linalg.norm(gradient(f, x, my_actual_symbs)), 'norm grad')
+        if c >= 20:
+            break
+        if verbose:
+            debug(c + 1, "iteration")
+            debug(np.linalg.norm(gradient(f, x, my_actual_symbs)), "Gradient norm")
         grad1 = gradient(f, x, my_actual_symbs)
         grad2 = gradient2(f, x, my_actual_symbs)
-        # debug(x, 'x values')
 
-        # debug(grad1, 'gradient')
-        # debug(grad2, 'gradient 2')
+        if verbose:
+            debug(x, "x values")
+            debug(grad1, "1st derivative (Jacobian)")
+            debug(grad2, "2nd derivative (Hessian)")
+
         inv_grad2 = -np.linalg.inv(grad2)
-        # debug(inv_grad2, 'inverse grad 2')
+
+        if verbose:
+            debug(inv_grad2, "negative inverse of Hessian")
+
         p = np.dot(inv_grad2, grad1)
-        # debug(p, 'direction p')
+
+        if verbose:
+            debug(p, "Direction p")
+
         if with_wolfe:
             t = line_search_wolfe(f, my_actual_symbs, x, p, constraints, t_init=t_init)
         else:
             t = 1
-        # debug(t, 't')
 
+        if verbose and with_wolfe:
+            debug(t, "Step size obtained with Wolfe conditions t")
+        elif verbose and not with_wolfe:
+            debug(t, "Step size without using Wolfe conditions t")
         if not constrained(x + t * p, constraints):
             break
+
         x = x + t * p
         x_list += [x]
 
         # debug(np.linalg.norm(grad1), 'gradient norm')
         c += 1
+    if verbose:
+        x1, x2 = x_list[-1]
+        debug((float(format(x1, ".10f")), float(format(x2, ".10f"))), 'THE OPTIMAL POINT FOUND AT:')
 
     return x_list, c
 
@@ -246,6 +277,9 @@ def hill_climber(
         # Generate a random step
         x_new = x + step_size * (2 * np.random.rand(len(x)) - 1)
         f_val_new = evaluate(func, x_new, my_actual_symbs)
+
+        if not constrained(x_new, constraints):
+            break
 
         # If the new solution is better, update
         if f_val_new < f_val:
@@ -337,21 +371,27 @@ def print_4_table(func, final_points, algo, mins_x, iters):
 
     titles = "Algorithm & Point Found & Evaluation & Optimal point & Real Minimum & \
 2-norm error between points & iterations"
-    
-    errors = [float(format(np.linalg.norm(min - final_points), '.10f')) \
-              for min in mins_x]
-    real_mins = [func(min_x) for min_x in mins_x]
-    real_mins_fmt = [float(format(rmin, '.10f')) for rmin in real_mins]
 
-    mins_x_fmt = [(float(format(x1, '.10f')), 
-                   float(format(x2, '.10f'))) for x1, x2 in mins_x]
+    errors = [
+        float(format(np.linalg.norm(min - final_points), ".10f")) for min in mins_x
+    ]
+    real_mins = [func(min_x) for min_x in mins_x]
+    real_mins_fmt = [float(format(rmin, ".10f")) for rmin in real_mins]
+
+    mins_x_fmt = [
+        (float(format(x1, ".10f")), float(format(x2, ".10f"))) for x1, x2 in mins_x
+    ]
 
     curr_str = (
         algo
         + " & "
-        + str(final_points)
+        + "[("
+        + format(final_points[0], ".10f")
+        + ", "
+        + format(final_points[1], ".10f")
+        + ")]"
         + " & "
-        + format(func1(final_points), '.10f')
+        + format(func1(final_points), ".10f")
         + " & "
         + str(mins_x_fmt)
         + " & "
@@ -364,6 +404,12 @@ def print_4_table(func, final_points, algo, mins_x, iters):
 
     debug(curr_str, titles)
 
+
+debug(
+    "",
+    "THIS SECTION DISPLAYS THE BEST RESULT THAT EACH METHOD CAN OBTAIN FOR THE \
+THREE PROBLEMS",
+)
 
 # Gradient descent
 # 0.8 for all 3 to work
@@ -387,24 +433,57 @@ plot_contour(func3, constraints3, x_list3, "function_3_gradient_descent")
 print_4_table(func3, x_list3[-1], "gradient descent", min3, iters3)
 
 # Newton without wolfe
-x_list12, iters12 = newton(expression1, [x1, x2], 1e-6, x_init1, constraints1, with_wolfe=False)
-x_list22, iters22 = newton(expression2, [x1, x2], 1e-6, x_init2, constraints2, with_wolfe=False)
-x_list32, iters32 = newton(expression3, [x1, x2], 1e-6, x_init3, constraints3, with_wolfe=False)
+x_list12, iters12 = newton(
+    expression1, [x1, x2], 1e-6, x_init1, constraints1, with_wolfe=False, verbose=False
+)
+x_list22, iters22 = newton(
+    expression2, [x1, x2], 1e-6, x_init2, constraints2, with_wolfe=False, verbose=False
+)
+x_list32, iters32 = newton(
+    expression3, [x1, x2], 1e-6, x_init3, constraints3, with_wolfe=False, verbose=False
+)
 plot_contour(func1, constraints1, x_list12, "function_1_newton_no_wolfe")
-print_4_table(func1, x_list12[-1], "newton", min1, iters12)
+print_4_table(func1, x_list12[-1], "newton no wolfe", min1, iters12)
 plot_contour(func2, constraints2, x_list22, "function_2_newton_no_wolfe")
-print_4_table(func2, x_list22[-1], "newton", min2, iters22)
+print_4_table(func2, x_list22[-1], "newton no wolfe", min2, iters22)
 plot_contour(func3, constraints3, x_list32, "function_3_newton_no_wolfe")
-print_4_table(func3, x_list32[-1], "newton", min3, iters32)
+print_4_table(func3, x_list32[-1], "newton no wolfe", min3, iters32)
 
 # Newton Method with wolfe
 # 1 for all to work
 # t = 1
-x_list12, iters12 = newton(expression1, [x1, x2], 1e-6, x_init1, constraints1, with_wolfe=True, t_init=1)
+x_list12, iters12 = newton(
+    expression1,
+    [x1, x2],
+    1e-6,
+    x_init1,
+    constraints1,
+    with_wolfe=True,
+    t_init=1,
+    verbose=False,
+)
 # t = 0.6 finds minimum
-x_list22, iters22 = newton(expression2, [x1, x2], 1e-6, x_init2, constraints2, with_wolfe=True, t_init=0.6)
+x_list22, iters22 = newton(
+    expression2,
+    [x1, x2],
+    1e-6,
+    x_init2,
+    constraints2,
+    with_wolfe=True,
+    t_init=0.6,
+    verbose=False,
+)
 # t = 250 finds minimum in 338 iterations
-x_list32, iters32 = newton(expression3, [x1, x2], 1e-6, x_init3, constraints3, with_wolfe=True, t_init=250)
+x_list32, iters32 = newton(
+    expression3,
+    [x1, x2],
+    1e-6,
+    x_init3,
+    constraints3,
+    with_wolfe=True,
+    t_init=250,
+    verbose=False,
+)
 plot_contour(func1, constraints1, x_list12, "function_1_newton_wolfe")
 print_4_table(func1, x_list12[-1], "newton", min1, iters12)
 plot_contour(func2, constraints2, x_list22, "function_2_newton_wolfe")
@@ -422,3 +501,15 @@ plot_contour(func2, constraints2, x_list23, "function_2_hill_climber")
 print_4_table(func2, x_list23[-1], "hill climber", min2, iters23)
 plot_contour(func3, constraints3, x_list33, "function_3_hill_climber")
 print_4_table(func3, x_list33[-1], "hill climber", min3, iters33)
+
+debug("", "THIS SECTION DISPLAYS THE RUN OF THE NEWTON METHOD FOR PROBLEM 2")
+x_list12, iters12 = newton(
+    expression1,
+    [x1, x2],
+    1e-6,
+    x_init1,
+    constraints1,
+    with_wolfe=False,
+    t_init=1,
+    verbose=True,
+)
