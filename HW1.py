@@ -11,9 +11,10 @@ import matplotlib.pyplot as plt
 from scipy import optimize
 
 # Global minimums obtained via Wolfram Alpha.
-min1 = np.array([0, 0])
-min2 = np.array([-0.08984201310031806242249056062, 0.7126564030207396333972658142])
-min3 = np.array([0, 0])
+min1 = [np.array([0, 0])]
+min2 = [np.array([-0.08984201310031806242249056062, 0.7126564030207396333972658142]),
+        np.array([0.08984201310031806242249056062, -0.7126564030207396333972658142])]
+min3 = [np.array([0, 0])]
 
 
 def debug(thing, title):
@@ -331,24 +332,32 @@ def plot_contour(func, constraints, x_list, title):
     plt.clf()
 
 
-def print_4_table(func, final_points, algo, min_x, iters):
+def print_4_table(func, final_points, algo, mins_x, iters):
     """For easier integration with overleaf report."""
 
     titles = "Algorithm & Point Found & Evaluation & Optimal point & Real Minimum & \
-        2-norm error between points & iterations"
+2-norm error between points & iterations"
+    
+    errors = [float(format(np.linalg.norm(min - final_points), '.10f')) \
+              for min in mins_x]
+    real_mins = [func(min_x) for min_x in mins_x]
+    real_mins_fmt = [float(format(rmin, '.10f')) for rmin in real_mins]
+
+    mins_x_fmt = [(float(format(x1, '.10f')), 
+                   float(format(x2, '.10f'))) for x1, x2 in mins_x]
 
     curr_str = (
         algo
         + " & "
         + str(final_points)
         + " & "
-        + str(func1(final_points))
+        + format(func1(final_points), '.10f')
         + " & "
-        + str(min_x)
+        + str(mins_x_fmt)
         + " & "
-        + str(func(min_x))
+        + str(real_mins_fmt)
         + " & "
-        + str(np.linalg.norm(min1 - final_points))
+        + str(errors)
         + " & "
         + str(iters)
     )
@@ -373,9 +382,9 @@ x_list3, iters3 = gradient_descent(
 plot_contour(func1, constraints1, x_list1, "function_1_gradient_descent")
 print_4_table(func1, x_list1[-1], "gradient descent", min1, iters1)
 plot_contour(func2, constraints2, x_list2, "function_2_gradient_descent")
-print_4_table(func1, x_list2[-1], "gradient descent", min1, iters2)
+print_4_table(func2, x_list2[-1], "gradient descent", min2, iters2)
 plot_contour(func3, constraints3, x_list3, "function_3_gradient_descent")
-print_4_table(func1, x_list3[-1], "gradient descent", min1, iters3)
+print_4_table(func3, x_list3[-1], "gradient descent", min3, iters3)
 
 # Newton without wolfe
 x_list12, iters12 = newton(expression1, [x1, x2], 1e-6, x_init1, constraints1, with_wolfe=False)
@@ -384,9 +393,9 @@ x_list32, iters32 = newton(expression3, [x1, x2], 1e-6, x_init3, constraints3, w
 plot_contour(func1, constraints1, x_list12, "function_1_newton_no_wolfe")
 print_4_table(func1, x_list12[-1], "newton", min1, iters12)
 plot_contour(func2, constraints2, x_list22, "function_2_newton_no_wolfe")
-print_4_table(func1, x_list22[-1], "newton", min2, iters22)
+print_4_table(func2, x_list22[-1], "newton", min2, iters22)
 plot_contour(func3, constraints3, x_list32, "function_3_newton_no_wolfe")
-print_4_table(func1, x_list32[-1], "newton", min3, iters32)
+print_4_table(func3, x_list32[-1], "newton", min3, iters32)
 
 # Newton Method with wolfe
 # 1 for all to work
@@ -399,9 +408,9 @@ x_list32, iters32 = newton(expression3, [x1, x2], 1e-6, x_init3, constraints3, w
 plot_contour(func1, constraints1, x_list12, "function_1_newton_wolfe")
 print_4_table(func1, x_list12[-1], "newton", min1, iters12)
 plot_contour(func2, constraints2, x_list22, "function_2_newton_wolfe")
-print_4_table(func1, x_list22[-1], "newton", min2, iters22)
+print_4_table(func2, x_list22[-1], "newton", min2, iters22)
 plot_contour(func3, constraints3, x_list32, "function_3_newton_wolfe")
-print_4_table(func1, x_list32[-1], "newton", min3, iters32)
+print_4_table(func3, x_list32[-1], "newton", min3, iters32)
 
 # Hill Climber
 x_list13, iters13 = hill_climber(expression1, x_init1, [x1, x2], constraints1)
