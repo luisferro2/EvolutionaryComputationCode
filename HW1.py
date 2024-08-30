@@ -71,7 +71,6 @@ def gradient(f, x, my_actual_symbs):
     grad = np.zeros((n_vars,))
     for i in range(n_vars):
         part_df = diff(f, my_actual_symbs[i])
-        # debug(type(part_df), 'type expression')
         for j, symb in enumerate(my_actual_symbs):
             part_df = part_df.subs(symb, x[j])
         grad[i] = part_df
@@ -105,24 +104,15 @@ def line_search_wolfe(
     grad_f_x = gradient(func, x, my_actual_symbs)
 
     l1 = evaluate(func, x + t * p, my_actual_symbs)
-    # print(l1, 'l1')
     r1 = evaluate(func, x, my_actual_symbs) + c1 * t * np.dot(grad_f_x, p)
-    # print(r1, 'r1')
     l2 = np.dot(gradient(func, x + t * p, my_actual_symbs), p)
-    # print(l2, 'l2')
     r2 = c2 * np.dot(grad_f_x, p)
-    # print(r2, 'r2')
     while not flag:
-        # debug(t, 't')
-        # debug(x + t * p, 'x + t * p')
+        # Condition 1
         if l1 > r1 or not constrained(x + t * p, constraints):
-            # debug(x + t * p, 'x plus step direction')
-
-            # if t < 1e-2:
-            #    break
             t *= 0.5
+        # Condition 2
         elif l2 < r2:
-            # debug(, 'larger')
             if not constrained(x + t * 2 * p, constraints):
                 break
             t *= 2.0
@@ -130,20 +120,15 @@ def line_search_wolfe(
             flag = True
 
         l1 = evaluate(func, x + t * p, my_actual_symbs)
-        # print('------------------------------------------------')
-        # print(l1, 'l1')
         r1 = evaluate(func, x, my_actual_symbs) + c1 * t * np.dot(grad_f_x, p)
-        # print(r1, 'r1')
         l2 = np.dot(gradient(func, x + t * p, my_actual_symbs), p)
-        # print(l2, 'l2')
         r2 = c2 * np.dot(grad_f_x, p)
-        # print(r2, 'r2')
 
     return t
 
 
 def gradient_descent(
-    func, my_actual_symbs, x_init, constraints, max_iter=1000, tol=1e-6, t_init=1
+    func, my_actual_symbs, x_init, constraints, max_iter=1000, tol=1e-6, t_init=1, verbose=False
 ):
     """
     Gradient descent method with step size control using Wolfe conditions.
@@ -157,29 +142,38 @@ def gradient_descent(
     x_list = [x_init]
 
     x = x_init
-    # debug(x, 'x')
 
     for i in range(max_iter):
         # 0-indexed
         if i >= 19:
             break
+        
+        if verbose:
+            debug(i + 1, 'Iteration')
+            debug(x, 'x values')
 
         grad = gradient(func, x, my_actual_symbs)
-
-        # print(np.linalg.norm(grad), 'grad norm')
+        
+        if verbose:
+            debug(np.linalg.norm(grad), 'Gradient Norm')
+        
         if np.linalg.norm(grad) < tol:
             break
 
         p = -grad
         t = line_search_wolfe(func, my_actual_symbs, x, p, constraints, t_init=t_init)
-        # debug(p, 'direction p')
-        # debug(t, 't')
-        # debug(x + t * p, 'new x')
+        if verbose:
+            debug(p, 'Direction p')
+            debug(t, 'Step size calculated with Wolfe conditions t')
         if not constrained(x + t * p, constraints):
             break
         x = x + t * p
         x_list += [x]
-        # debug(x, 'x')
+
+    if verbose:
+        x1, x2 = x_list[-1]
+        debug((float(format(x1, ".10f")), float(format(x2, ".10f"))), 'THE OPTIMAL POINT FOUND AT:')
+
     return x_list, i + 1
 
 
@@ -206,14 +200,11 @@ def newton(
     x = x_init
     c = 0
 
-    # debug(tol >= np.linalg.norm(gradient(f, x, my_actual_symbs)), 'tol >= gradient norm')
-    # debug(tol, 'tol')
-
     while tol < np.linalg.norm(gradient(f, x, my_actual_symbs)):
         if c >= 20:
             break
         if verbose:
-            debug(c + 1, "iteration")
+            debug(c + 1, "Iteration")
             debug(np.linalg.norm(gradient(f, x, my_actual_symbs)), "Gradient norm")
         grad1 = gradient(f, x, my_actual_symbs)
         grad2 = gradient2(f, x, my_actual_symbs)
@@ -258,7 +249,7 @@ def newton(
 
 
 def hill_climber(
-    func, x_init, my_actual_symbs, constraints, step_size=1, max_iter=2500
+    func, x_init, my_actual_symbs, constraints, step_size=1, max_iter=2500, verbose=False
 ):
     """
     Continuous Hill Climber method for single objective minimization problems.
@@ -273,7 +264,11 @@ def hill_climber(
     x = x_init
     f_val = evaluate(func, x, my_actual_symbs)
 
-    for _ in range(max_iter):
+    for i in range(max_iter):
+        if verbose:
+            debug(i + 1, 'Iteration')
+            debug(x, 'x values')
+
         # Generate a random step
         x_new = x + step_size * (2 * np.random.rand(len(x)) - 1)
         f_val_new = evaluate(func, x_new, my_actual_symbs)
@@ -286,6 +281,9 @@ def hill_climber(
             x, f_val = x_new, f_val_new
             x_list += [x]
 
+    if verbose:
+        x1, x2 = x_list[-1]
+        debug((float(format(x1, ".10f")), float(format(x2, ".10f"))), 'THE OPTIMAL POINT FOUND AT:')
     return x_list, max_iter
 
 
@@ -502,7 +500,8 @@ print_4_table(func2, x_list23[-1], "hill climber", min2, iters23)
 plot_contour(func3, constraints3, x_list33, "function_3_hill_climber")
 print_4_table(func3, x_list33[-1], "hill climber", min3, iters33)
 
-debug("", "THIS SECTION DISPLAYS THE RUN OF THE NEWTON METHOD FOR PROBLEM 1")
+debug("", "THIS SECTION DISPLAYS THE RUN OF THE ALGORITHMS IN DETAIL")
+debug("", "NEWTON'S METHOD PROBLEM 1")
 x_list12, iters12 = newton(
     expression1,
     [x1, x2],
@@ -512,4 +511,10 @@ x_list12, iters12 = newton(
     with_wolfe=False,
     t_init=1,
     verbose=True,
+)
+debug("", "HILL CLIMBER PROBLEM 2")
+x_list23, iters23 = hill_climber(expression2, x_init2, [x1, x2], constraints2, verbose=True)
+debug("", "GRADIENT DESCENT PROBLEM THREE")
+x_list3, iters3 = gradient_descent(
+    expression3, [x1, x2], x_init3, constraints3, t_init=1, verbose=True
 )
