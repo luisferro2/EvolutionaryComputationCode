@@ -240,7 +240,6 @@ def newton(
         x = x + t * p
         x_list += [x]
 
-        # debug(np.linalg.norm(grad1), 'gradient norm')
         c += 1
     if verbose:
         x1, x2 = x_list[-1]
