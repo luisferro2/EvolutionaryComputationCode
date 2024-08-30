@@ -502,7 +502,7 @@ print_4_table(func2, x_list23[-1], "hill climber", min2, iters23)
 plot_contour(func3, constraints3, x_list33, "function_3_hill_climber")
 print_4_table(func3, x_list33[-1], "hill climber", min3, iters33)
 
-debug("", "THIS SECTION DISPLAYS THE RUN OF THE NEWTON METHOD FOR PROBLEM 2")
+debug("", "THIS SECTION DISPLAYS THE RUN OF THE NEWTON METHOD FOR PROBLEM 1")
 x_list12, iters12 = newton(
     expression1,
     [x1, x2],
