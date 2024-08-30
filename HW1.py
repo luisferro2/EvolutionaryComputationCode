@@ -340,13 +340,8 @@ def plot_contour(func, constraints, x_list, title):
 
     Xin = np.array([[xi, yi] for xi, yi in zip(x, y)])
     Z = func([X, Y])
-    # debug(Z.shape, 'Z shape')
-    # fig, ax = plt.subplots()
     plt.contourf(X, Y, Z)
     plt.colorbar()
-    # cbar = fig.colorbar(cax, ticks=[-1, 0, 1])
-    # ax.clabel(CS, inline=False, fontsize=10)
-    # plt.set_title('Simplest default with labels')
     x1_list = [x[0] for x in x_list[:]]
     x2_list = [x[1] for x in x_list[:]]
 
@@ -357,8 +352,6 @@ def plot_contour(func, constraints, x_list, title):
     )
     (lines,) = plt.plot(x_list[0][0], x_list[0][1], "ro", label="start")
     (linee,) = plt.plot(x_list[-1][0], x_list[-1][1], "r*", label="end")
-    # lines.set_color('black')
-    # linee.set_color('black')
     plt.legend()
     plt.savefig(f"figures/{title}.jpg")
     plt.clf()
