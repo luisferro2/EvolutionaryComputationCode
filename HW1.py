@@ -155,6 +155,7 @@ def gradient_descent(
         grad = gradient(func, x, my_actual_symbs)
         
         if verbose:
+            debug(grad, 'Gradient')
             debug(np.linalg.norm(grad), 'Gradient Norm')
         
         if np.linalg.norm(grad) < tol:
