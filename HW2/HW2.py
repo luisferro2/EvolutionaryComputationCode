@@ -45,7 +45,7 @@ def test_problem_1(individual):
 def rastrigin(individual):
     A = 10
     n = len(individual)
-    return A * n + sum([(x**2 - A * np.cos(2 * np.pi * x)) for x in individual]),
+    return A * n + sum([(x**2 - A * np.cos(2 * np.pi * x)) for x in individual])
 
 
 ######################################
@@ -74,7 +74,7 @@ def real2binary(num, li, lu):
 '''xd = real2binary(-2.0480, -2.0480, 2.0480)
 debug(xd, '-2.048 to binary 4 precision')'''
 
-def initialize_randomb(ilen, n, ps):
+def initialize_randomb(vlen, n, ps, yl, yu):
     ''' Randomly initialize a population of binary individuals.
     
     ps - population size
@@ -83,13 +83,16 @@ def initialize_randomb(ilen, n, ps):
 
     population = []
     for x in range(ps):
-        individual = []
-        for i in range(n):
+        individual = ''
+        while len(individual) < vlen * n:
             curr_var = ''
-            for j in range(ilen):
+            for j in range(vlen):
                 new_digit = random.choices(['0', '1'], weights=[0.5, 0.5], k=1)[0]
                 curr_var += new_digit
-            individual += [curr_var]
+            if binary2real(curr_var, yl) < yl or binary2real(curr_var, yl) > yu: 
+                continue
+            individual += curr_var
+
         population += [individual]
     return population
 
@@ -113,6 +116,7 @@ def roulette(fitness_list):
 
     chosen_index = random.choices(list(range(len(fitness_list))), 
                    weights=proportion_fs, k=1)[0]
+    debug(chosen_index, 'chosen index')
     return chosen_index
 
 '''for i in range(5):
@@ -122,27 +126,28 @@ def roulette(fitness_list):
 
 def spx(parents):
     ''' Single point crossover
-
+    At this point the crossover has been determined
     '''
     P0, P1 = parents
-    pc = 1#0.9
 
     child1, child2 = P0, P1
+    
+    ilen = len(P0)
+    debug(parents, 'parents spx')
 
-    chance = random.random()
-    if chance < pc:    
-        
-        ilen = len(P0)
-        position = random.choices(list(range(ilen - 1)), 
-                    weights=[1 / (ilen - 1)] * (ilen - 1), k=1)[0]
-        debug(position, 'position')
-        left1 = P0[:position + 1] # exclusive upper limit
-        left2 = P1[:position + 1]
-        right1 = P0[position + 1:]
-        right2 = P1[position + 1:]
+    ws = [1 / (ilen - 1)] * (ilen - 1)
+    debug(ws, 'weights')
+    position = random.choices(list(range(ilen - 1)), 
+                weights=ws, k=1)[0]
+    debug(position, 'position')
+    left1 = P0[:position + 1] # exclusive upper limit
+    left2 = P1[:position + 1]
+    right1 = P0[position + 1:]
+    right2 = P1[position + 1:]
 
-        child1 = left1 + right2
-        child2 = left2 + right1
+    child1 = left1 + right2
+    child2 = left2 + right1
+
     return (child1, child2)
 
 '''xd = spx(['0100', '1011'])
@@ -151,8 +156,10 @@ debug(xd, 'children test')'''
 def bin_mutation(individual):
     # At this point the mutation has been determined
     ilen = len(individual)
+    ws = [1 / (ilen)] * ilen
+    debug(ws, 'weights')
     position = random.choices(list(range(ilen)), 
-                    weights=[1 / (ilen)] * (ilen), k=1)[0]
+                    weights=ws, k=1)[0]
     individual = individual[:position] + str(int(not int(individual[position]))) + \
             individual[position + 1:]
     return individual
@@ -295,8 +302,8 @@ def genetic_algorithm(func,
 
     # Initialize Population
     if encoding == Encoding.BINARY:
-        ilen = blen(yl, yu)
-        P = initialize_randomb(ilen, n, ps)
+        vlen = blen(yl, yu)
+        P = initialize_randomb(vlen, n, ps, yl, yu)
         debug(P, 'initial population')
         # Fitness P
         # Genotype to phenotype necessary for binary encoding.
@@ -304,27 +311,32 @@ def genetic_algorithm(func,
         for individual in P:
             # Variables phenotypes.
             vars_pts = []
-            for var in individual:
+            # Variable start
+            for vs in range(0, len(individual), vlen):
                 # Current variable phenotype.
-                curr_vpt = binary2real(var, yl)
+                curr_vpt = binary2real(individual[vs: vs + vlen], yl)
                 vars_pts += [curr_vpt]
             vars_pts = np.array(vars_pts)
+            debug(vars_pts, 'variables phenotypes')
             curr_f = func(vars_pts)
+            #debug(curr_f, 'current fitness')
             f_P += [curr_f]
-            bfs += [min(f_P)]
-        debug(f_P, 'fitnesses')
     else:
         # REAL
         P = initialize_randomr(n, ps, yl, yu)
         debug(P, 'initial population')
         # Fitness P
         f_P = [func(ind) for ind in P]
+    f_max = max(f_P)
+    f_Pa = [f_max - f for f in f_P]
+    bfs += [max(f_Pa)]
+    debug(f_Pa, 'fitnesses adjusted')
 
     
 
     # while stopping condition not met
     t = 0
-    for i in range(1000):
+    for i in range(20):
 
         if random.random() <= 0.9:
             #   select parents (proportionate, random, tournament, and uniform-state)
@@ -332,9 +344,8 @@ def genetic_algorithm(func,
             children = []
             for j in range(ps // 2):
                 if  selection == Selection.ROULETTE:
-                    fitnesses = [func(individual) for individual in P]
-                    P1 = P[roulette(fitnesses)]
-                    P2 = P[roulette(fitnesses)]
+                    P1 = P[roulette(f_P)]
+                    P2 = P[roulette(f_P)]
                 elif selection == Selection.TOURNEY:
                     P1_ind = binary_tourney(f_P, q=2)
                     P2_ind = binary_tourney(f_P, q=2)
@@ -345,12 +356,20 @@ def genetic_algorithm(func,
         
                 #   Crossover with crossover probability
                 if encoding == Encoding.BINARY:
+                    # The binary values may exceed the limit upwards.
+                    
                     H1, H2 = spx([P1, P2])
+                    for vs in range(0, len(H1), vs):
+                        # Fix the upper limit if necessary
+                        if binary2real(H1[vs: vs + vlen], yl) > yu: 
+                            H1 = H1[:vs] + real2binary(yu, yl, yu) + H1[vs + vlen + 1:]
+                        if binary2real(H2[vs: vs + vlen], yl) > yu: 
+                            H2 = H2[:vs] + real2binary(yu, yl, yu) + H2[vs + vlen + 1:]
+
                 else:
                     # REAL
                     H1, H2 = sbx(P1, P2)
                 children += [H1, H2]
-                debug((H1, H2), 'children before mutate')
         else:
             # No crossover.
             children = P
@@ -364,16 +383,41 @@ def genetic_algorithm(func,
             if random.random() <= 1 / n:
                 debug(child, 'before mutate')
                 if encoding == Encoding.BINARY:
-                    new_vars = []
-                    for var in child:
-                        new_var = bin_mutation(var)
-                        new_vars += [new_var]
-                    children[cind] = new_vars
+                    new_child = bin_mutation(child)
+                    children[cind] = new_child
                 else:
                     children[cind] = pm(child, yl, yu, t)
-                debug(child, 'after mutate')
+                debug(children[cind], 'after mutate')
                 
-        debug(f_P, 'fitnesses')
+        P = children
+
+        if encoding == Encoding.BINARY:
+            # Fitness P
+            # Genotype to phenotype necessary for binary encoding.
+            f_P = []
+            for individual in P:
+                # Variables phenotypes.
+                vars_pts = []
+                # Variable start
+                for vs in range(0, len(individual), vlen):
+                    # Current variable phenotype.
+                    curr_vpt = binary2real(individual[vs: vs + vlen], yl)
+                    vars_pts += [curr_vpt]
+                vars_pts = np.array(vars_pts)
+                debug(vars_pts, 'variables phenotypes')
+                curr_f = func(vars_pts)
+                #debug(curr_f, 'current fitness')
+                f_P += [curr_f]
+        else:
+            # REAL
+            # Fitness P
+            f_P = [func(ind) for ind in P]
+        f_max = max(f_P)
+        f_Pa = [f_max - f for f in f_P]
+        bfs += [max(f_Pa)]
+        debug(f_Pa, 'fitnesses adjusted')
+
+
         t += 1
     return bfs
 
@@ -386,18 +430,19 @@ limits_rastrigin = [-5.12, 5.12]
 my_bfs = genetic_algorithm(rastrigin,
                        limits_rastrigin[0],
                        limits_rastrigin[1],
-                       ps=500,
+                       ps=100,
                        encoding=Encoding.BINARY,
-                       selection=Selection.TOURNEY,
+                       selection=Selection.ROULETTE,
                        n=2,
                        verbose=False)# of decision variables
+debug(my_bfs, 'best fitnesses')
 
 plt.plot(my_bfs)
 #plt.yscale('log')
 plt.show()
 
-'''
 
+'''
 # Setup para algoritmo genético
 def setup_ga(toolbox, n, encoding):
     if encoding == 'binary':
