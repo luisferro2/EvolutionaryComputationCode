@@ -1,14 +1,23 @@
+"""
+Code for homework #2 Evolutionary Computing Class
+Authors:
+Luis Ignacio Ferro Salinas A01378248
+Iván Miguel García López A01686450
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
-from deap import base, creator, tools, algorithms
 import math
 import random
+# Just for easy read of the encodings and selections.
 from enum import Enum
-from decimal import *
+
+# This is our code from homework number 1.
+from classical_optimization import *
 
 ''' 
 prob_c = 0.9
-prob_m = 1 / n (length of binary individual)
+prob_m = 1 / n (length of binary individual, or n of variables)
 nc = 20
 nm = 20
 4 digits precision
@@ -494,7 +503,7 @@ my_bfs = genetic_algorithm(test_problem_1,
                             selection=Selection.ROULETTE,
                             n=2,
                             ps=250,#best_config[0],
-                            prob_c=0.8,#best_config[1],
+                            prob_c=0.99,#best_config[1],
                             prob_m=0.1,#best_config[2],
                             iterations=100,
                             verbose=False)# of decision variables
