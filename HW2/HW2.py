@@ -4,6 +4,22 @@ from deap import base, creator, tools, algorithms
 import math
 import random
 from enum import Enum
+from decimal import *
+
+''' 
+prob_c = 0.9
+prob_m = 1 / n (length of binary individual)
+nc = 20
+nm = 20
+4 digits precision
+20 runs 
+    rastrigin n=2, n=5
+    test problem 1
+graph best fitness (y) vs generation (x) verbose mode
+
+compare to hill climb, gradient and Newton on test problem 1 and rastrigin n=2
+
+'''
 
 class Encoding(Enum):
     BINARY = 1
@@ -31,6 +47,10 @@ def rastrigin(individual):
     n = len(individual)
     return A * n + sum([(x**2 - A * np.cos(2 * np.pi * x)) for x in individual]),
 
+
+######################################
+# Functions for binary representation
+
 def blen(li, lu):
     # num - the number to convert
     # li - limit inferior
@@ -38,41 +58,6 @@ def blen(li, lu):
     # Using 4 digits of precision.
     n_digits = int(math.log2((lu - li) * 10 ** 4) + 0.99)
     return n_digits
-
-def genetic_algorithm(li, 
-                      lu, 
-                      ps, 
-                      encoding, 
-                      selection,
-                      pc,
-                      pm):
-    ''' John Holland
-    
-    ps - population size
-    encoding - enum binary or real
-    '''
-
-
-    if encoding == Encoding.BINARY:
-        ilen = blen(li, lu)
-        P0 = initialize_randomb(ilen, ps)
-    else:
-        # REAL
-        ...
-
-    # while stopping condition not met
-    while True:
-        #   select parents (proportionate, random, tournament, and uniform-state)
-        if  selection == Selection.ROULETTE:
-            ...
-        elif selection == Selection.TOURNEY:
-            ...
-        #   Crossover with crossover probability
-        #   Mutation with mutation probability    
-    
-        # New population is the children 
-
-
 
 def real2binary(num, li, lu):
     # num - the number to convert
@@ -89,23 +74,33 @@ def real2binary(num, li, lu):
 '''xd = real2binary(-2.0480, -2.0480, 2.0480)
 debug(xd, '-2.048 to binary 4 precision')'''
 
-def initialize_randomb(ilen, ps):
+def initialize_randomb(ilen, n, ps):
     ''' Randomly initialize a population of binary individuals.
     
     ps - population size
     ilen - individual length
     '''
+
     population = []
     for x in range(ps):
-        individual = ''
-        for i in range(ilen):
-            new_digit = random.choices(['0', '1'], weights=[0.5, 0.5], k=1)[0]
-            individual += new_digit
+        individual = []
+        for i in range(n):
+            curr_var = ''
+            for j in range(ilen):
+                new_digit = random.choices(['0', '1'], weights=[0.5, 0.5], k=1)[0]
+                curr_var += new_digit
+            individual += [curr_var]
         population += [individual]
     return population
 
 '''xd = initialize_randomb(10, 10)
 debug(xd, 'test population')'''
+
+def binary2real(ind, yl):
+    return yl + 0.0001 * int(ind, 2)
+
+'''xd = binary2real('0000000000100000', -2.048)
+debug(xd, 'bin to real')'''
 
 def roulette(fitness_list):
     ''' xd
@@ -117,7 +112,7 @@ def roulette(fitness_list):
     debug(proportion_fs, 'proportions')
 
     chosen_index = random.choices(list(range(len(fitness_list))), 
-                   weights=proportion_fs, k=1)
+                   weights=proportion_fs, k=1)[0]
     return chosen_index
 
 '''for i in range(5):
@@ -154,20 +149,252 @@ def spx(parents):
 debug(xd, 'children test')'''
 
 def bin_mutation(individual):
+    # At this point the mutation has been determined
     ilen = len(individual)
     position = random.choices(list(range(ilen)), 
                     weights=[1 / (ilen)] * (ilen), k=1)[0]
-    debug(position, 'position')
-    pm = 1 / ilen
-    debug(pm, 'pm')
-    chance = random.random()
-    debug(chance, 'chance')
-    if chance < pm:
-        individual = individual[:position] + str(int(not int(individual[position]))) + \
+    individual = individual[:position] + str(int(not int(individual[position]))) + \
             individual[position + 1:]
     return individual
-xd = bin_mutation('00000')
-debug(xd, 'mutation')
+'''xd = bin_mutation('00000')
+debug(xd, 'mutation')'''
+###########################################
+
+
+###########################################
+# Functions for real representation
+
+def initialize_randomr(n, ps, yl, yu):
+    '''
+    n - decision variables
+    yl - y lower
+    yu - y upper
+    '''
+    P = []
+    for i in range(ps):
+        # Current individual.
+        curr_ind = []
+        for i in range(n):
+            getcontext().prec = 3
+            random_float = random.uniform(yl, yu)
+            point_index = str(random_float).index('.')
+            # Random float truncated
+            random_floatt = float(str(random_float)[:point_index + 4])
+            random_decimal = Decimal(random_floatt)
+            curr_ind += [random_floatt]
+        curr_ind = np.array(curr_ind)
+        P += [curr_ind]
+    return P
+
+'''xd = initialize_randomr(-2.0480, 2.0480)
+print(xd)'''
+
+def sbx(P1, P2, n_c=20):
+    u = random.random()
+    print('u', u)
+    if u <= 0.5:
+        beta_bar = (2 * u) ** (1 / n_c + 1)
+    else:
+        beta_bar = (1 / (2 * (1 - u))) ** (1 / n_c + 1)
+    print('beta bar', beta_bar)
+
+    H1 = 0.5 * ((P1 + P2) - beta_bar * (P2 - P1))
+    H2 = 0.5 * ((P1 + P2) + beta_bar * (P2 - P1))
+
+    return H1, H2
+
+'''xd = sbx(np.array([1, 2, 3, 4]), np.array([2, 2, 2, 2]))
+print(xd)'''
+
+def pm(P, yl, yu, t):
+    ''' Parameter mutation
+
+    yl - y lower
+    yu - y upper
+    '''
+    # Var to change index
+    var_tci = random.choices(list(range(len(P))),
+                             weights=[1 / len(P)] * len(P),
+                             k=1)[0]
+    debug(P, 'Parent')
+
+    var_to_change = P[var_tci]
+    debug(var_to_change, 'var to change')
+
+    u = 0.72#random.random()
+
+    debug(u, 'u')
+
+    # Delta lower
+    delta_l = min([(var_to_change - yl) / (yu - yl),
+                   (yu - var_to_change) / (yu - yl)])
+    debug(delta_l, 'delta l')
+
+    eta_m = 100 + t
+
+    debug(eta_m, 'eta m')
+
+    if u <= 0.5:
+        delta_q = (2 * u + (1 - 2 * u) * (1 - delta_l) ** (eta_m + 1))\
+              ** (1 / (eta_m + 1)) - 1
+    else:
+        delta_q = 1 - (2 * (1 - u) + 2 * (u - 0.5) * (1 - delta_l)\
+                       ** (eta_m + 1)) ** (1 / (eta_m + 1))
+    debug(delta_q, 'delta q')
+
+    delta_max = yu - yl
+
+    debug(delta_max, 'delta max')
+    new_var = var_to_change + delta_q * delta_max
+    P[var_tci] = new_var
+    return P
+
+'''xd = pm([2.3, 4.5, -1.2, 0.8], -2, 6, 20)
+print(xd)'''
+
+def binary_tourney(f_P, q):
+    ''' Fitness Population f_P
+    '''
+    contestants = random.sample(f_P, q)
+    
+    '''random.choices([f_P],
+                                 weights=[1 / len(f_P)] * len(f_P),
+                                 k=q)
+    '''
+    debug(contestants, 'contestants')
+
+    winner = min(contestants)
+
+    debug(winner, 'winner')
+
+    return f_P.index(winner) 
+
+'''xd = binary_tourney([1, 2, 3], 2)
+debug(xd, 'binary winner')'''
+
+
+###########################################
+
+
+
+def genetic_algorithm(func, 
+                      yl, 
+                      yu, 
+                      ps, 
+                      encoding, 
+                      selection,
+                      n=0,
+                      verbose=False):
+    ''' John Holland
+    
+    ps - population size
+    encoding - enum binary or real
+    '''
+    # Best fitnesses
+    bfs = []
+
+    # Initialize Population
+    if encoding == Encoding.BINARY:
+        ilen = blen(yl, yu)
+        P = initialize_randomb(ilen, n, ps)
+        debug(P, 'initial population')
+        # Fitness P
+        # Genotype to phenotype necessary for binary encoding.
+        f_P = []
+        for individual in P:
+            # Variables phenotypes.
+            vars_pts = []
+            for var in individual:
+                # Current variable phenotype.
+                curr_vpt = binary2real(var, yl)
+                vars_pts += [curr_vpt]
+            vars_pts = np.array(vars_pts)
+            curr_f = func(vars_pts)
+            f_P += [curr_f]
+            bfs += [min(f_P)]
+        debug(f_P, 'fitnesses')
+    else:
+        # REAL
+        P = initialize_randomr(n, ps, yl, yu)
+        debug(P, 'initial population')
+        # Fitness P
+        f_P = [func(ind) for ind in P]
+
+    
+
+    # while stopping condition not met
+    t = 0
+    for i in range(1000):
+
+        if random.random() <= 0.9:
+            #   select parents (proportionate, random, tournament, and uniform-state)
+            # Number of times to get 2 children .
+            children = []
+            for j in range(ps // 2):
+                if  selection == Selection.ROULETTE:
+                    fitnesses = [func(individual) for individual in P]
+                    P1 = P[roulette(fitnesses)]
+                    P2 = P[roulette(fitnesses)]
+                elif selection == Selection.TOURNEY:
+                    P1_ind = binary_tourney(f_P, q=2)
+                    P2_ind = binary_tourney(f_P, q=2)
+                    debug((P1_ind, P2_ind), 'selected parents positions')
+                    P1 = P[P1_ind]
+                    P2 = P[P2_ind]
+                    debug((P1, P2), 'selected parents')
+        
+                #   Crossover with crossover probability
+                if encoding == Encoding.BINARY:
+                    H1, H2 = spx([P1, P2])
+                else:
+                    # REAL
+                    H1, H2 = sbx(P1, P2)
+                children += [H1, H2]
+                debug((H1, H2), 'children before mutate')
+        else:
+            # No crossover.
+            children = P
+    
+        debug(children, 'children')
+
+
+        #   Mutation with mutation probability
+        # child index.
+        for cind, child in enumerate(children):
+            if random.random() <= 1 / n:
+                debug(child, 'before mutate')
+                if encoding == Encoding.BINARY:
+                    new_vars = []
+                    for var in child:
+                        new_var = bin_mutation(var)
+                        new_vars += [new_var]
+                    children[cind] = new_vars
+                else:
+                    children[cind] = pm(child, yl, yu, t)
+                debug(child, 'after mutate')
+                
+        debug(f_P, 'fitnesses')
+        t += 1
+    return bfs
+
+
+
+limits_p1 = [-2.048, 2.048]
+limits_rastrigin = [-5.12, 5.12]
+
+# New population is the children 
+my_bfs = genetic_algorithm(rastrigin,
+                       limits_rastrigin[0],
+                       limits_rastrigin[1],
+                       ps=500,
+                       encoding=Encoding.BINARY,
+                       selection=Selection.TOURNEY,
+                       n=2,
+                       verbose=False)# of decision variables
+
+plt.plot(my_bfs)
+#plt.yscale('log')
+plt.show()
 
 '''
 
