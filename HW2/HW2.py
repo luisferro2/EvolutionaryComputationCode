@@ -65,9 +65,9 @@ def real2binary(num, li, lu):
     # lu - limit up
     # Using 4 digits of precision.
     n_digits = int(math.log2((lu - li) * 10 ** 4) + 0.99)
-    debug(n_digits, 'digits')
+    #debug(n_digits, 'digits')
     num_as_int = int((num - li) / 0.0001)
-    debug(num_as_int, 'num in int')
+    #debug(num_as_int, 'num in int')
     num_as_bin = bin(num_as_int)[2:].zfill(n_digits)
     return num_as_bin
 
@@ -112,11 +112,11 @@ def roulette(fitness_list):
 
     # Proportion fitnesses
     proportion_fs = [fitness / fitness_sum for fitness in fitness_list]
-    debug(proportion_fs, 'proportions')
+    #debug(proportion_fs, 'proportions')
 
     chosen_index = random.choices(list(range(len(fitness_list))), 
                    weights=proportion_fs, k=1)[0]
-    debug(chosen_index, 'chosen index')
+    #debug(chosen_index, 'chosen index')
     return chosen_index
 
 '''for i in range(5):
@@ -139,8 +139,8 @@ def spx(parents):
     #debug(ws, 'weights')
     position = random.choices(list(range(ilen - 1)), 
                 weights=ws, k=1)[0]
-    debug(position, 'position')
-    debug(parents, 'parents spx')
+    #debug(position, 'position')
+    #debug(parents, 'parents spx')
     
     left1 = P0[:position + 1] # exclusive upper limit
     left2 = P1[:position + 1]
@@ -149,7 +149,7 @@ def spx(parents):
 
     child1 = left1 + right2
     child2 = left2 + right1
-    debug((child1, child2), 'children spx')
+    #debug((child1, child2), 'children spx')
 
     return (child1, child2)
 
@@ -290,10 +290,13 @@ debug(xd, 'binary winner')'''
 def genetic_algorithm(func, 
                       yl, 
                       yu, 
-                      ps, 
                       encoding, 
                       selection,
                       n=0,
+                      ps=100,
+                      prob_c=0.9,
+                      prob_m=0.001,
+                      iterations=100,
                       verbose=False):
     ''' John Holland
     
@@ -307,7 +310,7 @@ def genetic_algorithm(func,
     if encoding == Encoding.BINARY:
         vlen = blen(yl, yu)
         P = initialize_randomb(vlen, n, ps, yl, yu)
-        debug(P, 'initial population')
+        #debug(P, 'initial population')
         # Fitness P
         # Genotype to phenotype necessary for binary encoding.
         f_P = []
@@ -320,48 +323,48 @@ def genetic_algorithm(func,
                 curr_vpt = binary2real(individual[vs: vs + vlen], yl)
                 vars_pts += [curr_vpt]
             vars_pts = np.array(vars_pts)
-            debug(vars_pts, 'variables phenotypes')
+            #debug(vars_pts, 'variables phenotypes')
             curr_f = func(vars_pts)
             #debug(curr_f, 'current fitness')
             f_P += [curr_f]
     else:
         # REAL
         P = initialize_randomr(n, ps, yl, yu)
-        debug(P, 'initial population')
+        #debug(P, 'initial population')
         # Fitness P
         f_P = [func(ind) for ind in P]
     f_max = max(f_P)
     f_Pa = [f_max - f for f in f_P]
     bfs += [min(f_P)]
-    debug(f_P, 'fitnesses original')
-    debug(f_Pa, 'fitnesses adjusted')
+    #debug(f_P, 'fitnesses original')
+    #debug(f_Pa, 'fitnesses adjusted')
 
     
 
     # while stopping condition not met
     t = 0
-    for i in range(100):
+    for i in range(iterations):
 
-        if random.random() <= 0.9:
+        if random.random() <= prob_c:
             #   select parents (proportionate, random, tournament, and uniform-state)
             # Number of times to get 2 children .
             children = []
             for j in range(ps // 2):
-                debug(selection, 'SELECTION HAPPENNING')
+                #debug(selection, 'SELECTION HAPPENNING')
                 if  selection == Selection.ROULETTE:
                     P1_ind = roulette(f_Pa)
                     P2_ind = roulette(f_Pa)
-                    debug((P1_ind, P2_ind), 'selected parents positions')
+                    #debug((P1_ind, P2_ind), 'selected parents positions')
                 elif selection == Selection.TOURNEY:
                     P1_ind = binary_tourney(f_P, q=2)
                     P2_ind = binary_tourney(f_P, q=2)
-                    debug((P1_ind, P2_ind), 'selected parents positions')
+                    #debug((P1_ind, P2_ind), 'selected parents positions')#
                     
                 P1 = P[P1_ind]
                 P2 = P[P2_ind]
-                debug((P1, P2), 'selected parents')
+                #debug((P1, P2), 'selected parents')
         
-                debug('CROSSOVER HAPPENNING', 'Crossover')
+                #debug('CROSSOVER HAPPENNING', 'Crossover')
                 #   Crossover with crossover probability
                 if encoding == Encoding.BINARY:
                     # The binary values may exceed the limit upwards.
@@ -381,15 +384,15 @@ def genetic_algorithm(func,
             # No crossover.
             children = P
     
-        debug(children, 'children')
+        #debug(children, 'children')
 
 
         #   Mutation with mutation probability
         # child index.
         for cind, child in enumerate(children):
-            if random.random() <= 1 / n:
-                debug('MUTATION HAPPENNING', 'mutation')
-                debug(child, 'before mutate')
+            if random.random() <= prob_m:
+                #debug('MUTATION HAPPENNING', 'mutation')
+                #debug(child, 'before mutate')
                 if encoding == Encoding.BINARY:
                     new_child = bin_mutation(child)
                     for vs in range(0, len(new_child), vs):
@@ -401,7 +404,7 @@ def genetic_algorithm(func,
                     children[cind] = new_child
                 else:
                     children[cind] = pm(child, yl, yu, t)
-                debug(children[cind], 'after mutate')
+                #debug(children[cind], 'after mutate')
                 
         P = children
 
@@ -420,7 +423,7 @@ def genetic_algorithm(func,
                     vars_pts += [curr_vpt]
                 vars_pts = np.array(vars_pts)
                 all_vars += [vars_pts]
-                debug(vars_pts, 'variables phenotypes')
+                #debug(vars_pts, 'variables phenotypes')
                 curr_f = func(vars_pts)
                 #debug(curr_f, 'current fitness')
                 f_P += [curr_f]
@@ -441,19 +444,53 @@ def genetic_algorithm(func,
 
 
 
+ps_poses = [50, 100, 250]
+#iter_poses = [50, 100, 150]
+prob_c_poses = [0.5, 0.6, 0.7, 0.8, 0.9]
+prob_m_poses = [0.1, 0.2, 0.3, 0.4, 0.5]
+
+
 limits_p1 = [-2.048, 2.048]
 limits_rastrigin = [-5.12, 5.12]
+# Best combined fitnesses
+best_cf = float('Inf')
+'''
+# Simple grid search beibi
+for curr_ps in ps_poses:
+    for curr_prob_c in prob_c_poses:
+        for curr_prob_m in prob_m_poses:
+            # New population is the children 
+            my_bfs = genetic_algorithm(rastrigin,
+                                limits_rastrigin[0],
+                                limits_rastrigin[1],
+                                encoding=Encoding.BINARY,
+                                selection=Selection.ROULETTE,
+                                n=3,
+                                ps=curr_ps,
+                                prob_c=curr_prob_c,
+                                prob_m=curr_prob_m,
+                                iterations=100,
+                                verbose=False)# of decision variables
+            combed_f = sum(my_bfs)
+            if combed_f < best_cf:
+                best_cf = combed_f
+                best_config = [curr_ps,
+                                curr_prob_c,
+                                curr_prob_m]'''
 
-# New population is the children 
 my_bfs = genetic_algorithm(rastrigin,
-                       limits_rastrigin[0],
-                       limits_rastrigin[1],
-                       ps=40,
-                       encoding=Encoding.BINARY,
-                       selection=Selection.ROULETTE,
-                       n=2,
-                       verbose=False)# of decision variables
-debug(my_bfs, 'best fitnesses')
+                            limits_rastrigin[0],
+                            limits_rastrigin[1],
+                            encoding=Encoding.BINARY,
+                            selection=Selection.ROULETTE,
+                            n=3,
+                            ps=100,#best_config[0],
+                            prob_c=0.7,#best_config[1],
+                            prob_m=0.1,#best_config[2],
+                            iterations=100,
+                            verbose=False)# of decision variables
+
+#debug(best_config, 'best config')
 
 plt.plot(my_bfs)
 #plt.yscale('log')
