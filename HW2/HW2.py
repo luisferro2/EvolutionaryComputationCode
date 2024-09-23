@@ -39,7 +39,7 @@ def debug(thing, title):
 # Función problema 1
 def test_problem_1(individual):
     x1, x2 = individual
-    return 100 * (x2 - x1**2)**2 + (1 - x1)**2,
+    return 100 * (x2 - x1**2)**2 + (1 - x1)**2
 
 # Función de Rastrigin
 def rastrigin(individual):
@@ -110,8 +110,12 @@ def roulette(fitness_list):
     '''
     fitness_sum = sum(fitness_list)
 
-    # Proportion fitnesses
-    proportion_fs = [fitness / fitness_sum for fitness in fitness_list]
+    
+    if fitness_sum == 0:
+        proportion_fs = [1 / len(fitness_list)] * len(fitness_list)
+    else:
+        # Proportion fitnesses
+        proportion_fs = [fitness / fitness_sum for fitness in fitness_list]
     #debug(proportion_fs, 'proportions')
 
     chosen_index = random.choices(list(range(len(fitness_list))), 
@@ -446,46 +450,51 @@ def genetic_algorithm(func,
 
 ps_poses = [50, 100, 250]
 #iter_poses = [50, 100, 150]
-prob_c_poses = [0.5, 0.6, 0.7, 0.8, 0.9]
-prob_m_poses = [0.1, 0.2, 0.3, 0.4, 0.5]
+prob_c_poses = [0.8, 0.9, 0.99]
+prob_m_poses = [0.01, 0.1, 0.15]
 
 
 limits_p1 = [-2.048, 2.048]
 limits_rastrigin = [-5.12, 5.12]
-# Best combined fitnesses
-best_cf = float('Inf')
+# Best config average
+best_cavg = float('Inf')
 '''
 # Simple grid search beibi
 for curr_ps in ps_poses:
     for curr_prob_c in prob_c_poses:
         for curr_prob_m in prob_m_poses:
-            # New population is the children 
-            my_bfs = genetic_algorithm(rastrigin,
-                                limits_rastrigin[0],
-                                limits_rastrigin[1],
-                                encoding=Encoding.BINARY,
-                                selection=Selection.ROULETTE,
-                                n=3,
-                                ps=curr_ps,
-                                prob_c=curr_prob_c,
-                                prob_m=curr_prob_m,
-                                iterations=100,
-                                verbose=False)# of decision variables
-            combed_f = sum(my_bfs)
-            if combed_f < best_cf:
-                best_cf = combed_f
+            config_avg = 0
+            for i in range(3):
+                # New population is the children 
+                my_bfs = genetic_algorithm(test_problem_1,
+                                    limits_p1[0],
+                                    limits_p1[1],
+                                    encoding=Encoding.BINARY,
+                                    selection=Selection.ROULETTE,
+                                    n=2,
+                                    ps=curr_ps,
+                                    prob_c=curr_prob_c,
+                                    prob_m=curr_prob_m,
+                                    iterations=100,
+                                    verbose=False)# of decision variables
+                combed_f = sum(my_bfs)
+                config_avg += combed_f
+            config_avg /= 3
+
+            if  config_avg < best_cavg:
+                best_cavg = config_avg
                 best_config = [curr_ps,
                                 curr_prob_c,
                                 curr_prob_m]'''
 
-my_bfs = genetic_algorithm(rastrigin,
-                            limits_rastrigin[0],
-                            limits_rastrigin[1],
+my_bfs = genetic_algorithm(test_problem_1,
+                            limits_p1[0],
+                            limits_p1[1],
                             encoding=Encoding.BINARY,
                             selection=Selection.ROULETTE,
-                            n=3,
-                            ps=100,#best_config[0],
-                            prob_c=0.7,#best_config[1],
+                            n=2,
+                            ps=250,#best_config[0],
+                            prob_c=0.8,#best_config[1],
                             prob_m=0.1,#best_config[2],
                             iterations=100,
                             verbose=False)# of decision variables
