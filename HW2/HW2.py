@@ -133,13 +133,15 @@ def spx(parents):
     child1, child2 = P0, P1
     
     ilen = len(P0)
-    debug(parents, 'parents spx')
+    
 
     ws = [1 / (ilen - 1)] * (ilen - 1)
-    debug(ws, 'weights')
+    #debug(ws, 'weights')
     position = random.choices(list(range(ilen - 1)), 
                 weights=ws, k=1)[0]
     debug(position, 'position')
+    debug(parents, 'parents spx')
+    
     left1 = P0[:position + 1] # exclusive upper limit
     left2 = P1[:position + 1]
     right1 = P0[position + 1:]
@@ -147,6 +149,7 @@ def spx(parents):
 
     child1 = left1 + right2
     child2 = left2 + right1
+    debug((child1, child2), 'children spx')
 
     return (child1, child2)
 
@@ -157,7 +160,7 @@ def bin_mutation(individual):
     # At this point the mutation has been determined
     ilen = len(individual)
     ws = [1 / (ilen)] * ilen
-    debug(ws, 'weights')
+    #debug(ws, 'weights')
     position = random.choices(list(range(ilen)), 
                     weights=ws, k=1)[0]
     individual = individual[:position] + str(int(not int(individual[position]))) + \
@@ -329,35 +332,39 @@ def genetic_algorithm(func,
         f_P = [func(ind) for ind in P]
     f_max = max(f_P)
     f_Pa = [f_max - f for f in f_P]
-    bfs += [max(f_Pa)]
+    bfs += [min(f_P)]
+    debug(f_P, 'fitnesses original')
     debug(f_Pa, 'fitnesses adjusted')
 
     
 
     # while stopping condition not met
     t = 0
-    for i in range(20):
+    for i in range(100):
 
         if random.random() <= 0.9:
             #   select parents (proportionate, random, tournament, and uniform-state)
             # Number of times to get 2 children .
             children = []
             for j in range(ps // 2):
+                debug(selection, 'SELECTION HAPPENNING')
                 if  selection == Selection.ROULETTE:
-                    P1 = P[roulette(f_P)]
-                    P2 = P[roulette(f_P)]
+                    P1_ind = roulette(f_Pa)
+                    P2_ind = roulette(f_Pa)
+                    debug((P1_ind, P2_ind), 'selected parents positions')
                 elif selection == Selection.TOURNEY:
                     P1_ind = binary_tourney(f_P, q=2)
                     P2_ind = binary_tourney(f_P, q=2)
                     debug((P1_ind, P2_ind), 'selected parents positions')
-                    P1 = P[P1_ind]
-                    P2 = P[P2_ind]
-                    debug((P1, P2), 'selected parents')
+                    
+                P1 = P[P1_ind]
+                P2 = P[P2_ind]
+                debug((P1, P2), 'selected parents')
         
+                debug('CROSSOVER HAPPENNING', 'Crossover')
                 #   Crossover with crossover probability
                 if encoding == Encoding.BINARY:
                     # The binary values may exceed the limit upwards.
-                    
                     H1, H2 = spx([P1, P2])
                     for vs in range(0, len(H1), vs):
                         # Fix the upper limit if necessary
@@ -381,9 +388,16 @@ def genetic_algorithm(func,
         # child index.
         for cind, child in enumerate(children):
             if random.random() <= 1 / n:
+                debug('MUTATION HAPPENNING', 'mutation')
                 debug(child, 'before mutate')
                 if encoding == Encoding.BINARY:
                     new_child = bin_mutation(child)
+                    for vs in range(0, len(new_child), vs):
+                        # Fix the upper limit if necessary
+                        if binary2real(new_child[vs: vs + vlen], yl) > yu: 
+                            new_child = new_child[:vs] + \
+                                real2binary(yu, yl, yu) + \
+                                new_child[vs + vlen + 1:]
                     children[cind] = new_child
                 else:
                     children[cind] = pm(child, yl, yu, t)
@@ -395,6 +409,7 @@ def genetic_algorithm(func,
             # Fitness P
             # Genotype to phenotype necessary for binary encoding.
             f_P = []
+            all_vars = []
             for individual in P:
                 # Variables phenotypes.
                 vars_pts = []
@@ -404,6 +419,7 @@ def genetic_algorithm(func,
                     curr_vpt = binary2real(individual[vs: vs + vlen], yl)
                     vars_pts += [curr_vpt]
                 vars_pts = np.array(vars_pts)
+                all_vars += [vars_pts]
                 debug(vars_pts, 'variables phenotypes')
                 curr_f = func(vars_pts)
                 #debug(curr_f, 'current fitness')
@@ -414,7 +430,9 @@ def genetic_algorithm(func,
             f_P = [func(ind) for ind in P]
         f_max = max(f_P)
         f_Pa = [f_max - f for f in f_P]
-        bfs += [max(f_Pa)]
+        bfs += [min(f_P)]
+        debug(all_vars[f_P.index(min(f_P))], 'best variables')
+        debug(f_P, 'fitnesses original')
         debug(f_Pa, 'fitnesses adjusted')
 
 
@@ -430,7 +448,7 @@ limits_rastrigin = [-5.12, 5.12]
 my_bfs = genetic_algorithm(rastrigin,
                        limits_rastrigin[0],
                        limits_rastrigin[1],
-                       ps=100,
+                       ps=40,
                        encoding=Encoding.BINARY,
                        selection=Selection.ROULETTE,
                        n=2,
