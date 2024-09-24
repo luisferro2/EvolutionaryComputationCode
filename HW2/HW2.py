@@ -716,19 +716,19 @@ def main(verbose=True, runs_genetic=20):
                             r2r_table,
                             r3b_table,
                             r3r_table):
-            debug(f'{ind} & {cp1b} & {cp1r} & {cr2b} & {cr2r} & {cr3b} & {cr3r}\\\\', '')
+            debug(f'{ind} & {cp1b:.4f} & {cp1r:.4f} & {cr2b:.4f} & {cr2r:.4f} & {cr3b:.4f} & {cr3r:.4f}\\\\', '')
 
-        debug(f'Mean & {np.mean(p1b_table)} & {np.mean(p1r_table)} & {np.mean(r2b_table)} \
-                {np.mean(r2r_table)} & {np.mean(r3b_table)} & {np.mean(r3r_table)}\\\\', 
+        debug(f'Mean & {np.mean(p1b_table):.4f} & {np.mean(p1r_table):.4f} & {np.mean(r2b_table):.4f} \
+                {np.mean(r2r_table):.4f} & {np.mean(r3b_table):.4f} & {np.mean(r3r_table):.4f}\\\\', 
                 'MEAN')
-        debug(f'Standard Deviation & {np.std(p1b_table)} & {np.std(p1r_table)} & {np.std(r2b_table)} \
-                {np.std(r2r_table)} & {np.std(r3b_table)} & {np.std(r3r_table)}\\\\', 
+        debug(f'Standard Deviation & {np.std(p1b_table):.4f} & {np.std(p1r_table):.4f} & {np.std(r2b_table):.4f} \
+                {np.std(r2r_table):.4f} & {np.std(r3b_table):.4f} & {np.std(r3r_table):.4f}\\\\', 
                 'STD')
-        debug(f'Min & {np.min(p1b_table)} & {np.min(p1r_table)} & {np.min(r2b_table)} \
-                {np.min(r2r_table)} & {np.min(r3b_table)} & {np.min(r3r_table)}\\\\', 
+        debug(f'Min & {np.min(p1b_table):.4f} & {np.min(p1r_table):.4f} & {np.min(r2b_table):.4f} \
+                {np.min(r2r_table):.4f} & {np.min(r3b_table):.4f} & {np.min(r3r_table):.4f}\\\\', 
                 'MIN')
-        debug(f'Max & {np.max(p1b_table)} & {np.max(p1r_table)} & {np.max(r2b_table)} \
-                {np.max(r2r_table)} & {np.max(r3b_table)} & {np.max(r3r_table)}\\\\', 
+        debug(f'Max & {np.max(p1b_table):.4f} & {np.max(p1r_table):.4f} & {np.max(r2b_table):.4f} \
+                {np.max(r2r_table):.4f} & {np.max(r3b_table):.4f} & {np.max(r3r_table):.4f}\\\\', 
                 'MAX')
     
 
@@ -803,9 +803,10 @@ def main(verbose=True, runs_genetic=20):
                               'red', 
                               'green'])
             
+            plt.ylabel('The absolute error')
             plt.savefig(os.path.join('figures', problem, title))
 
-            plt.ylabel('The absolute error')
+            
 
             
 
