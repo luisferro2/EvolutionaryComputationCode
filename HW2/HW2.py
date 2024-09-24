@@ -11,32 +11,20 @@ import math
 import random
 # Just for easy read of the encodings and selections.
 from enum import Enum
+# saving figures
+import os
 
 # This is our code from homework number 1.
 from classical_optimization import *
 
-''' 
-prob_c = 0.9
-prob_m = 1 / n (length of binary individual, or n of variables)
-nc = 20
-nm = 20
-4 digits precision
-20 runs 
-    rastrigin n=2, n=5
-    test problem 1
-graph best fitness (y) vs generation (x) verbose mode
-
-compare to hill climb, gradient and Newton on test problem 1 and rastrigin n=2
-
-'''
 
 class Encoding(Enum):
-    BINARY = 1
-    REAL = 2
+    BINARY = 'BINARY'
+    REAL = 'REAL'
 
 class Selection(Enum):
-    ROULETTE = 1
-    TOURNEY = 2
+    ROULETTE = 'ROULETTE'
+    TOURNEY = 'TOURNEY'
 
 def debug(thing, title):
     print("--------------------------------------------")
@@ -198,12 +186,12 @@ def initialize_randomr(n, ps, yl, yu):
         # Current individual.
         curr_ind = []
         for i in range(n):
-            getcontext().prec = 3
+            #getcontext().prec = 3
             random_float = random.uniform(yl, yu)
             point_index = str(random_float).index('.')
             # Random float truncated
             random_floatt = float(str(random_float)[:point_index + 4])
-            random_decimal = Decimal(random_floatt)
+            #random_decimal = Decimal(random_floatt)
             curr_ind += [random_floatt]
         curr_ind = np.array(curr_ind)
         P += [curr_ind]
@@ -310,7 +298,9 @@ def genetic_algorithm(func,
                       prob_c=0.9,
                       prob_m=0.001,
                       iterations=100,
-                      verbose=False):
+                      verbose=False,
+                      problem='?',
+                      fig_n='?'):
     ''' John Holland
     
     ps - population size
@@ -453,8 +443,135 @@ def genetic_algorithm(func,
 
 
         t += 1
-    return bfs
+    
+    if verbose:
+        plt.plot(bfs)
+        title = f'Genetic_{problem}_encoding_{encoding.value}_selection_{selection.value}_{fig_n}'
+        plt.title(title)
+        plt.xlabel('Generation')
+        plt.ylabel('Fitness')
+        plt.savefig(os.path.join('figures', f'{encoding.value}', f'{problem}', title))
+        plt.clf()
 
+''' 
+prob_c = 0.9
+prob_m = 1 / n (length of binary individual, or n of variables)
+nc = 20
+nm = 20
+4 digits precision
+20 runs 
+    rastrigin n=2, n=5
+    test problem 1
+graph best fitness (y) vs generation (x) verbose mode
+
+compare to hill climb, gradient and Newton on test problem 1 and rastrigin n=2
+
+'''
+########################################################
+# Homework requirements
+limits_p1 = [-2.048, 2.048]
+limits_rastrigin = [-5.12, 5.12]
+
+#######################################################
+# BINARY
+# Length for binary
+L1 = int(math.log2((limits_p1[1] - limits_p1[0]) * 10 ** 4) + 0.99)
+for i in range(20):
+    my_bfs = genetic_algorithm(test_problem_1,
+                            limits_p1[0],
+                            limits_p1[1],
+                            encoding=Encoding.BINARY,
+                            selection=Selection.ROULETTE,
+                            n=2,
+                            ps=100,
+                            prob_c=0.9,
+                            prob_m=1 / L1,
+                            iterations=100,
+                            verbose=True,
+                            problem='problem1',
+                            fig_n=i)
+    
+# Length for binary
+L23 = int(math.log2((limits_rastrigin[1] - limits_rastrigin[0]) * 10 ** 4) + 0.99)
+for i in range(20):
+    my_bfs = genetic_algorithm(rastrigin,
+                            limits_rastrigin[0],
+                            limits_rastrigin[1],
+                            encoding=Encoding.BINARY,
+                            selection=Selection.ROULETTE,
+                            n=2,
+                            ps=100,
+                            prob_c=0.9,
+                            prob_m=1 / L23,
+                            iterations=100,
+                            verbose=True,
+                            problem='rastrigin2',
+                            fig_n=i)
+
+for i in range(20):
+    my_bfs = genetic_algorithm(rastrigin,
+                            limits_rastrigin[0],
+                            limits_rastrigin[1],
+                            encoding=Encoding.BINARY,
+                            selection=Selection.ROULETTE,
+                            n=3,
+                            ps=100,
+                            prob_c=0.9,
+                            prob_m=1 / L23,
+                            iterations=100,
+                            verbose=True,
+                            problem='rastrigin3',
+                            fig_n=i)
+#######################################################
+# REAL
+'''
+for i in range(20):
+    my_bfs = genetic_algorithm(test_problem_1,
+                            limits_p1[0],
+                            limits_p1[1],
+                            encoding=Encoding.REAL,
+                            selection=Selection.TOURNEY,
+                            n=2,
+                            ps=100,
+                            prob_c=0.9,
+                            prob_m=1 / 2,
+                            iterations=100,
+                            verbose=True,
+                            problem='problem1',
+                            fig_n=i)
+    
+for i in range(20):
+    my_bfs = genetic_algorithm(rastrigin,
+                            limits_rastrigin[0],
+                            limits_rastrigin[1],
+                            encoding=Encoding.REAL,
+                            selection=Selection.TOURNEY,
+                            n=2,
+                            ps=100,
+                            prob_c=0.9,
+                            prob_m=1 / 2,
+                            iterations=100,
+                            verbose=True,
+                            problem='rastrigin2',
+                            fig_n=i)
+
+for i in range(20):
+    my_bfs = genetic_algorithm(rastrigin,
+                            limits_rastrigin[0],
+                            limits_rastrigin[1],
+                            encoding=Encoding.REAL,
+                            selection=Selection.TOURNEY,
+                            n=3,
+                            ps=100,
+                            prob_c=0.9,
+                            prob_m=1 / 3,
+                            iterations=100,
+                            verbose=True,
+                            problem='rastrigin3',
+                            fig_n=i)'''
+
+########################################################
+########################################################
 
 
 ps_poses = [50, 100, 250]
@@ -463,8 +580,7 @@ prob_c_poses = [0.8, 0.9, 0.99]
 prob_m_poses = [0.01, 0.1, 0.15]
 
 
-limits_p1 = [-2.048, 2.048]
-limits_rastrigin = [-5.12, 5.12]
+
 # Best config average
 best_cavg = float('Inf')
 '''
@@ -510,9 +626,6 @@ my_bfs = genetic_algorithm(test_problem_1,
 
 #debug(best_config, 'best config')
 
-plt.plot(my_bfs)
-#plt.yscale('log')
-plt.show()
 
 
 '''
