@@ -796,7 +796,12 @@ def main(verbose=True, runs_genetic=20):
                       best_real[-1],
                       best_grad[-1],
                       best_newton[-1],
-                      best_hill[-1]])
+                      best_hill[-1]],
+                      color=['yellow',
+                              'blue', 
+                              'purple', 
+                              'red', 
+                              'green'])
             
             plt.savefig(os.path.join('figures', problem, title))
 
