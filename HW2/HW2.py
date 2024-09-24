@@ -202,12 +202,12 @@ print(xd)'''
 
 def sbx(P1, P2, n_c=20):
     u = random.random()
-    print('u', u)
+    #print('u', u)
     if u <= 0.5:
         beta_bar = (2 * u) ** (1 / n_c + 1)
     else:
         beta_bar = (1 / (2 * (1 - u))) ** (1 / n_c + 1)
-    print('beta bar', beta_bar)
+    #print('beta bar', beta_bar)
 
     H1 = 0.5 * ((P1 + P2) - beta_bar * (P2 - P1))
     H2 = 0.5 * ((P1 + P2) + beta_bar * (P2 - P1))
@@ -227,23 +227,23 @@ def pm(P, yl, yu, t):
     var_tci = random.choices(list(range(len(P))),
                              weights=[1 / len(P)] * len(P),
                              k=1)[0]
-    debug(P, 'Parent')
+    #debug(P, 'Parent')
 
     var_to_change = P[var_tci]
-    debug(var_to_change, 'var to change')
+    #debug(var_to_change, 'var to change')
 
     u = 0.72#random.random()
 
-    debug(u, 'u')
+    #debug(u, 'u')
 
     # Delta lower
     delta_l = min([(var_to_change - yl) / (yu - yl),
                    (yu - var_to_change) / (yu - yl)])
-    debug(delta_l, 'delta l')
+    #debug(delta_l, 'delta l')
 
     eta_m = 100 + t
 
-    debug(eta_m, 'eta m')
+    #debug(eta_m, 'eta m')
 
     if u <= 0.5:
         delta_q = (2 * u + (1 - 2 * u) * (1 - delta_l) ** (eta_m + 1))\
@@ -251,11 +251,11 @@ def pm(P, yl, yu, t):
     else:
         delta_q = 1 - (2 * (1 - u) + 2 * (u - 0.5) * (1 - delta_l)\
                        ** (eta_m + 1)) ** (1 / (eta_m + 1))
-    debug(delta_q, 'delta q')
+    #debug(delta_q, 'delta q')
 
     delta_max = yu - yl
 
-    debug(delta_max, 'delta max')
+    #debug(delta_max, 'delta max')
     new_var = var_to_change + delta_q * delta_max
     P[var_tci] = new_var
     return P
@@ -272,11 +272,11 @@ def binary_tourney(f_P, q):
                                  weights=[1 / len(f_P)] * len(f_P),
                                  k=q)
     '''
-    debug(contestants, 'contestants')
+    #debug(contestants, 'contestants')
 
     winner = min(contestants)
 
-    debug(winner, 'winner')
+    #debug(winner, 'winner')
 
     return f_P.index(winner) 
 
@@ -285,8 +285,6 @@ debug(xd, 'binary winner')'''
 
 
 ###########################################
-
-
 
 def genetic_algorithm(func, 
                       yl, 
@@ -299,13 +297,15 @@ def genetic_algorithm(func,
                       prob_m=0.001,
                       iterations=100,
                       verbose=False,
-                      problem='?',
-                      fig_n='?'):
+                      problem='?',):
     ''' John Holland
     
     ps - population size
     encoding - enum binary or real
     '''
+
+    if verbose:
+        debug(f'{encoding.value} and {selection.value}', 'RUNNING GENETIC ALGORITHM')
     # Best fitnesses
     bfs = []
 
@@ -313,7 +313,6 @@ def genetic_algorithm(func,
     if encoding == Encoding.BINARY:
         vlen = blen(yl, yu)
         P = initialize_randomb(vlen, n, ps, yl, yu)
-        #debug(P, 'initial population')
         # Fitness P
         # Genotype to phenotype necessary for binary encoding.
         f_P = []
@@ -330,44 +329,49 @@ def genetic_algorithm(func,
             curr_f = func(vars_pts)
             #debug(curr_f, 'current fitness')
             f_P += [curr_f]
+
+            f_max = max(f_P)
+            f_Pa = [f_max - f for f in f_P]
     else:
         # REAL
         P = initialize_randomr(n, ps, yl, yu)
-        #debug(P, 'initial population')
         # Fitness P
         f_P = [func(ind) for ind in P]
-    f_max = max(f_P)
-    f_Pa = [f_max - f for f in f_P]
+    if verbose:
+        debug(P, 'Initial population')
+        
     bfs += [min(f_P)]
-    #debug(f_P, 'fitnesses original')
-    #debug(f_Pa, 'fitnesses adjusted')
-
-    
+    if verbose:
+        debug(f_P, 'Fitnesses')
 
     # while stopping condition not met
     t = 0
     for i in range(iterations):
+        if verbose:
+            debug('', f'GENERATION {i}')
+        children = []
+        # Number of times to get 2 children to equal population size.
+        for j in range(ps // 2):
+            if verbose:
+                debug(selection, 'SELECTION HAPPENNING')
+            if  selection == Selection.ROULETTE:
+                P1_ind = roulette(f_Pa)
+                P2_ind = roulette(f_Pa)
+            elif selection == Selection.TOURNEY:
+                P1_ind = binary_tourney(f_P, q=2)
+                P2_ind = binary_tourney(f_P, q=2)
+            if verbose:
+                debug((P1_ind, P2_ind), 'Selected parents positions')
+                
+            P1 = P[P1_ind]
+            P2 = P[P2_ind]
+            if verbose:
+                debug((P1, P2), 'Selected parents')
 
-        if random.random() <= prob_c:
-            #   select parents (proportionate, random, tournament, and uniform-state)
-            # Number of times to get 2 children .
-            children = []
-            for j in range(ps // 2):
-                #debug(selection, 'SELECTION HAPPENNING')
-                if  selection == Selection.ROULETTE:
-                    P1_ind = roulette(f_Pa)
-                    P2_ind = roulette(f_Pa)
-                    #debug((P1_ind, P2_ind), 'selected parents positions')
-                elif selection == Selection.TOURNEY:
-                    P1_ind = binary_tourney(f_P, q=2)
-                    P2_ind = binary_tourney(f_P, q=2)
-                    #debug((P1_ind, P2_ind), 'selected parents positions')#
-                    
-                P1 = P[P1_ind]
-                P2 = P[P2_ind]
-                #debug((P1, P2), 'selected parents')
-        
-                #debug('CROSSOVER HAPPENNING', 'Crossover')
+            if random.random() <= prob_c:
+                # Select parents (proportionate, random, tournament, and uniform-state)
+                if verbose:
+                    debug('', 'CROSSOVER HAPPENNING')
                 #   Crossover with crossover probability
                 if encoding == Encoding.BINARY:
                     # The binary values may exceed the limit upwards.
@@ -378,24 +382,23 @@ def genetic_algorithm(func,
                             H1 = H1[:vs] + real2binary(yu, yl, yu) + H1[vs + vlen + 1:]
                         if binary2real(H2[vs: vs + vlen], yl) > yu: 
                             H2 = H2[:vs] + real2binary(yu, yl, yu) + H2[vs + vlen + 1:]
-
                 else:
                     # REAL
                     H1, H2 = sbx(P1, P2)
                 children += [H1, H2]
-        else:
-            # No crossover.
-            children = P
-    
-        #debug(children, 'children')
-
-
-        #   Mutation with mutation probability
+            else:
+                # No crossover.
+                children += [P1, P2]
+            if verbose:
+                debug(children, 'Children')
+        
+        # Mutation with mutation probability.
         # child index.
         for cind, child in enumerate(children):
             if random.random() <= prob_m:
-                #debug('MUTATION HAPPENNING', 'mutation')
-                #debug(child, 'before mutate')
+                if verbose:
+                    debug('', 'MUTATION HAPPENNING')
+                    debug(child, 'Before mutate')
                 if encoding == Encoding.BINARY:
                     new_child = bin_mutation(child)
                     for vs in range(0, len(new_child), vs):
@@ -407,7 +410,8 @@ def genetic_algorithm(func,
                     children[cind] = new_child
                 else:
                     children[cind] = pm(child, yl, yu, t)
-                #debug(children[cind], 'after mutate')
+                if verbose:
+                    debug(children[cind], 'After mutate')
                 
         P = children
 
@@ -426,33 +430,24 @@ def genetic_algorithm(func,
                     vars_pts += [curr_vpt]
                 vars_pts = np.array(vars_pts)
                 all_vars += [vars_pts]
-                #debug(vars_pts, 'variables phenotypes')
                 curr_f = func(vars_pts)
-                #debug(curr_f, 'current fitness')
                 f_P += [curr_f]
+                f_max = max(f_P)
+                f_Pa = [f_max - f for f in f_P]
         else:
             # REAL
             # Fitness P
             f_P = [func(ind) for ind in P]
-        f_max = max(f_P)
-        f_Pa = [f_max - f for f in f_P]
+            all_vars = P
+        
         bfs += [min(f_P)]
-        debug(all_vars[f_P.index(min(f_P))], 'best variables')
-        debug(f_P, 'fitnesses original')
-        debug(f_Pa, 'fitnesses adjusted')
-
+        if verbose:
+            debug(all_vars[f_P.index(min(f_P))], 'best variables')
+            debug(f_P, 'Fitnesses')
 
         t += 1
     
-    if verbose:
-        plt.plot(bfs)
-        title = f'Genetic_{problem}_encoding_{encoding.value}_selection_{selection.value}_{fig_n}'
-        plt.title(title)
-        plt.xlabel('Generation')
-        plt.ylabel('Fitness')
-        plt.savefig(os.path.join('figures', f'{encoding.value}', f'{problem}', title))
-        plt.clf()
-
+    return bfs
 ''' 
 prob_c = 0.9
 prob_m = 1 / n (length of binary individual, or n of variables)
@@ -467,111 +462,355 @@ graph best fitness (y) vs generation (x) verbose mode
 compare to hill climb, gradient and Newton on test problem 1 and rastrigin n=2
 
 '''
-########################################################
-# Homework requirements
-limits_p1 = [-2.048, 2.048]
-limits_rastrigin = [-5.12, 5.12]
 
-#######################################################
-# BINARY
-# Length for binary
-L1 = int(math.log2((limits_p1[1] - limits_p1[0]) * 10 ** 4) + 0.99)
-for i in range(20):
-    my_bfs = genetic_algorithm(test_problem_1,
-                            limits_p1[0],
-                            limits_p1[1],
-                            encoding=Encoding.BINARY,
-                            selection=Selection.ROULETTE,
-                            n=2,
-                            ps=100,
-                            prob_c=0.9,
-                            prob_m=1 / L1,
-                            iterations=100,
-                            verbose=True,
-                            problem='problem1',
-                            fig_n=i)
+
+def main(verbose=True, runs_genetic=20):
+    ########################################################
+    # Homework requirements.
+    limits_p1 = [-2.048, 2.048]
+    limits_rastrigin = [-5.12, 5.12]
+    if verbose:
+        debug('\n', 'FIRST SECTION TOY EXAMPLES FOR THE THREE PROBLEMS')
+    #######################################################
+    # BINARY
     
-# Length for binary
-L23 = int(math.log2((limits_rastrigin[1] - limits_rastrigin[0]) * 10 ** 4) + 0.99)
-for i in range(20):
-    my_bfs = genetic_algorithm(rastrigin,
-                            limits_rastrigin[0],
-                            limits_rastrigin[1],
-                            encoding=Encoding.BINARY,
-                            selection=Selection.ROULETTE,
-                            n=2,
-                            ps=100,
-                            prob_c=0.9,
-                            prob_m=1 / L23,
-                            iterations=100,
-                            verbose=True,
-                            problem='rastrigin2',
-                            fig_n=i)
+    # Problem 1 binary for table.
+    p1b_table = []
+    r2b_table = []
+    r3b_table = []
 
-for i in range(20):
-    my_bfs = genetic_algorithm(rastrigin,
-                            limits_rastrigin[0],
-                            limits_rastrigin[1],
-                            encoding=Encoding.BINARY,
-                            selection=Selection.ROULETTE,
-                            n=3,
-                            ps=100,
-                            prob_c=0.9,
-                            prob_m=1 / L23,
-                            iterations=100,
-                            verbose=True,
-                            problem='rastrigin3',
-                            fig_n=i)
-#######################################################
-# REAL
-'''
-for i in range(20):
-    my_bfs = genetic_algorithm(test_problem_1,
-                            limits_p1[0],
-                            limits_p1[1],
-                            encoding=Encoding.REAL,
-                            selection=Selection.TOURNEY,
-                            n=2,
-                            ps=100,
-                            prob_c=0.9,
-                            prob_m=1 / 2,
-                            iterations=100,
-                            verbose=True,
-                            problem='problem1',
-                            fig_n=i)
+    # Minimum fitness sum for problem 1 binary.
+    min_p1b = float('Inf')
+    best_p1b = -1
+    # Best for problem 1 binary.
+    min_r2b = float('Inf')
+    best_r2b = -1
+    min_r3b = float('Inf')
+    best_r3b = -1
+
+
+    # Length for binary
+    L1 = int(math.log2((limits_p1[1] - limits_p1[0]) * 10 ** 4) + 0.99)
+
+    # Toy example
+    if verbose:
+        debug('\n', 'PROBLEM 1')
+    curr_bfs = genetic_algorithm(test_problem_1,
+                                limits_p1[0],
+                                limits_p1[1],
+                                encoding=Encoding.BINARY,
+                                selection=Selection.ROULETTE,
+                                n=2,
+                                ps=4,
+                                prob_c=0.9,
+                                prob_m=1 / L1,
+                                iterations=3,
+                                verbose=True,
+                                problem='problem1')
+
+    for i in range(runs_genetic):
+        curr_bfs = genetic_algorithm(test_problem_1,
+                                limits_p1[0],
+                                limits_p1[1],
+                                encoding=Encoding.BINARY,
+                                selection=Selection.ROULETTE,
+                                n=2,
+                                ps=100,
+                                prob_c=0.9,
+                                prob_m=1 / L1,
+                                iterations=100,
+                                verbose=False,
+                                problem='problem1')
+        p1b_table += [min(curr_bfs)]
+
+        # Current fitness sum.
+        curr_fs = sum(curr_bfs)
+        if curr_fs < min_p1b:
+            min_p1b = curr_fs
+            best_p1b = curr_bfs
+
+    # Length for binary
+    L23 = int(math.log2((limits_rastrigin[1] - limits_rastrigin[0]) * 10 ** 4) + 0.99)
+    for i in range(runs_genetic):
+        curr_bfs = genetic_algorithm(rastrigin,
+                                limits_rastrigin[0],
+                                limits_rastrigin[1],
+                                encoding=Encoding.BINARY,
+                                selection=Selection.ROULETTE,
+                                n=2,
+                                ps=100,
+                                prob_c=0.9,
+                                prob_m=1 / (L23 * 2),
+                                iterations=100,
+                                verbose=False,
+                                problem='rastrigin2',)
+        r2b_table += [min(curr_bfs)]
+
+        # Current fitness sum.
+        curr_fs = sum(curr_bfs)
+        if curr_fs < min_r2b:
+            min_r2b = curr_fs
+            best_r2b = curr_bfs
+
+    for i in range(runs_genetic):
+        curr_bfs = genetic_algorithm(rastrigin,
+                                limits_rastrigin[0],
+                                limits_rastrigin[1],
+                                encoding=Encoding.BINARY,
+                                selection=Selection.ROULETTE,
+                                n=5,
+                                ps=100,
+                                prob_c=0.9,
+                                prob_m=1 / (L23 * 5),
+                                iterations=100,
+                                verbose=False,
+                                problem='rastrigin3',)
+        r3b_table += [min(curr_bfs)]
+
+        # Current fitness sum.
+        curr_fs = sum(curr_bfs)
+        if curr_fs < min_r3b:
+            min_r3b = curr_fs
+            best_r3b = curr_bfs
+                
+    #######################################################
+    # REAL
+
+    # Problem 1 real for table.
+    p1r_table = []
+    r2r_table = []
+    r3r_table = []
+
+    # Minimum fitness sum for problem 1 real.
+    min_p1r = float('Inf')
+    best_p1r = -1
+    # Best for problem 1 real.
+    min_r2r = float('Inf')
+    best_r2r = -1
+    min_r3r = float('Inf')
+    best_r2r = -1
+
+    for i in range(runs_genetic):
+        curr_bfs = genetic_algorithm(test_problem_1,
+                                limits_p1[0],
+                                limits_p1[1],
+                                encoding=Encoding.REAL,
+                                selection=Selection.TOURNEY,
+                                n=2,
+                                ps=100,
+                                prob_c=0.9,
+                                prob_m=1 / 2,
+                                iterations=100,
+                                verbose=False,
+                                problem='problem1',)
+        p1r_table += [min(curr_bfs)]
+
+        # Current fitness sum.
+        curr_fs = sum(curr_bfs)
+        if curr_fs < min_p1r:
+            min_p1r = curr_fs
+            best_p1r = curr_bfs
+
+
+    # Toy example
+    if verbose:
+        debug('\n', 'RASTRIGIN N=2')
+    curr_bfs = genetic_algorithm(rastrigin,
+                                limits_rastrigin[0],
+                                limits_rastrigin[1],
+                                encoding=Encoding.REAL,
+                                selection=Selection.TOURNEY,
+                                n=2,
+                                ps=4,
+                                prob_c=0.9,
+                                prob_m=1 / 2,
+                                iterations=3,
+                                verbose=True,
+                                problem='rastrigin2',)
+
+    for i in range(runs_genetic):
+        curr_bfs = genetic_algorithm(rastrigin,
+                                limits_rastrigin[0],
+                                limits_rastrigin[1],
+                                encoding=Encoding.REAL,
+                                selection=Selection.TOURNEY,
+                                n=2,
+                                ps=100,
+                                prob_c=0.9,
+                                prob_m=1 / 2,
+                                iterations=100,
+                                verbose=False,
+                                problem='rastrigin2',)
+        r2r_table += [min(curr_bfs)]
+
+        # Current fitness sum.
+        curr_fs = sum(curr_bfs)
+        if curr_fs < min_r2r:
+            min_r2r = curr_fs
+            best_r2r = curr_bfs
+
+    # Toy example.
+    if verbose:
+        debug('\n', 'RASTRIGIN N=5')
+    curr_bfs = genetic_algorithm(rastrigin,
+                                limits_rastrigin[0],
+                                limits_rastrigin[1],
+                                encoding=Encoding.REAL,
+                                selection=Selection.TOURNEY,
+                                n=5,
+                                ps=4,
+                                prob_c=0.9,
+                                prob_m=1 / 5,
+                                iterations=3,
+                                verbose=True,
+                                problem='rastrigin5',)
+
+    for i in range(runs_genetic):
+        curr_bfs = genetic_algorithm(rastrigin,
+                                limits_rastrigin[0],
+                                limits_rastrigin[1],
+                                encoding=Encoding.REAL,
+                                selection=Selection.TOURNEY,
+                                n=5,
+                                ps=100,
+                                prob_c=0.9,
+                                prob_m=1 / 5,
+                                iterations=100,
+                                verbose=False,
+                                problem='rastrigin5',)
+        r3r_table += [min(curr_bfs)]
+
+        # Current fitness sum.
+        curr_fs = sum(curr_bfs)
+        if curr_fs < min_r3r:
+            min_r3r = curr_fs
+            best_r3r = curr_bfs
+
+    if verbose:
+        debug('\n', 'SECOND SECTION OVERLEAF TABLE')
+
+    if verbose:
+        plt.style.use('ggplot')
+        # Best pair for problem.
+        for best_pair_p in [(best_p1b, best_p1r, 'problem1'),
+                          (best_r2b, best_r2r, 'rastrigin2'),
+                          (best_r3b, best_r3r, 'rastrigin5')]:
+            
+            best_bin, best_real, problem = best_pair_p
+            plt.plot(best_bin, label=f'{Encoding.BINARY.value} with {Selection.ROULETTE.value}')
+            plt.plot(best_real, label=f'{Encoding.REAL.value} with {Selection.TOURNEY.value}')
+            title = f'Genetic_for_{problem}'
+            plt.title(title)
+            plt.xlabel('Generation')
+            plt.ylabel('Fitness')
+            plt.legend()
+            plt.savefig(os.path.join('figures', problem, title))
+            plt.clf()
+
+        debug('BINARY PROBLEM 1 & REAL PROBLEM 1 & BINARY RASTRIGIN 2 & REAL \
+                RASTRIGIN 2 & BINARY RASTRIGIN 3 & REAL RASTRIGIN 3',
+                'THE VALUES TO FILL TABLE IN OVERLEAF')
+        for ind, cp1b, cp1r, cr2b, cr2r, cr3b, cr3r in zip(list(range(20)), p1b_table, 
+                            p1r_table,
+                            r2b_table,
+                            r2r_table,
+                            r3b_table,
+                            r3r_table):
+            debug(f'{ind} & {cp1b} & {cp1r} & {cr2b} & {cr2r} & {cr3b} & {cr3r}\\\\', '')
+
+        debug(f'Mean & {np.mean(p1b_table)} & {np.mean(p1r_table)} & {np.mean(r2b_table)} \
+                {np.mean(r2r_table)} & {np.mean(r3b_table)} & {np.mean(r3r_table)}\\\\', 
+                'MEAN')
+        debug(f'Standard Deviation & {np.std(p1b_table)} & {np.std(p1r_table)} & {np.std(r2b_table)} \
+                {np.std(r2r_table)} & {np.std(r3b_table)} & {np.std(r3r_table)}\\\\', 
+                'STD')
+        debug(f'Min & {np.min(p1b_table)} & {np.min(p1r_table)} & {np.min(r2b_table)} \
+                {np.min(r2r_table)} & {np.min(r3b_table)} & {np.min(r3r_table)}\\\\', 
+                'MIN')
+        debug(f'Max & {np.max(p1b_table)} & {np.max(p1r_table)} & {np.max(r2b_table)} \
+                {np.max(r2r_table)} & {np.max(r3b_table)} & {np.max(r3r_table)}\\\\', 
+                'MAX')
     
-for i in range(20):
-    my_bfs = genetic_algorithm(rastrigin,
-                            limits_rastrigin[0],
-                            limits_rastrigin[1],
-                            encoding=Encoding.REAL,
-                            selection=Selection.TOURNEY,
-                            n=2,
-                            ps=100,
-                            prob_c=0.9,
-                            prob_m=1 / 2,
-                            iterations=100,
-                            verbose=True,
-                            problem='rastrigin2',
-                            fig_n=i)
 
-for i in range(20):
-    my_bfs = genetic_algorithm(rastrigin,
-                            limits_rastrigin[0],
-                            limits_rastrigin[1],
-                            encoding=Encoding.REAL,
-                            selection=Selection.TOURNEY,
-                            n=3,
-                            ps=100,
-                            prob_c=0.9,
-                            prob_m=1 / 3,
-                            iterations=100,
-                            verbose=True,
-                            problem='rastrigin3',
-                            fig_n=i)'''
+    # For sympy.
+    x1, x2 = symbols("x1 x2")
+    # problem 1 min 0 at (1, 1)
+    expression1 = 100 * (x2 - x1**2)**2 + (1 - x1)**2
+    constraints1 = [(-2.048, 2.048), (-2.048, 2.048)]
+    x_init1 = np.array([0, 1.5])
+    # rastrigin 2 min 0 at (0, 0)
+    expression2 = 10 * 2 + (x1**2 - 10 * cos(2 * pi * x1)) + (x2**2 - 10 * cos(2 * pi * x2))
+    constraints2 = [(-5.12, 5.12), (-5.12, 5.12)]
+    x_init2 = np.array([-2, 2])
 
+    # Problem 1 comparison
+    x_list11, iters1 = gradient_descent(
+        expression1, [x1, x2], x_init1, constraints1, t_init=10
+    )
+
+    x_list12, iters12 = newton(
+        expression1, [x1, x2], 1e-6, x_init1, constraints1, with_wolfe=False, verbose=False
+    )
+
+    x_list13, iters13 = hill_climber(expression1, x_init1, [x1, x2], constraints1)
+
+    # Best problem 1 gradient Newton and Hill.
+    best_p1g = [test_problem_1(x) for x in x_list11]
+    best_p1n = [test_problem_1(x) for x in x_list12]
+    best_p1h = [test_problem_1(x) for x in x_list13]
+
+    # Rastrigin 2 comparison
+    x_list21, iters1 = gradient_descent(
+        expression2, [x1, x2], x_init2, constraints2, t_init=1
+    )
+    
+
+    x_list22, iters12 = newton(
+        expression2, [x1, x2], 1e-6, x_init2, constraints2, with_wolfe=True, t_init=250, verbose=False
+    )
+
+    x_list23, iters13 = hill_climber(expression2, x_init2, [x1, x2], constraints2, step_size=2)
+
+    
+
+    # Best rastrigin 2 gradient Newton and Hill.
+    best_r2g = [rastrigin(x) for x in x_list21]
+    best_r2n = [rastrigin(x) for x in x_list22]
+    best_r2h = [rastrigin(x) for x in x_list23]
+
+
+    if verbose:
+        debug('\n', 'THIRD SECTION SAVING FIGURES COMPARING GENETIC WITH OPTIMIZATION IN FOLDER "/figures"')
+    for best_quintuple_p in [(best_p1b, best_p1r, best_p1g, best_p1n, best_p1h, 'problem1'),
+                          (best_r2b, best_r2r, best_r2g, best_r2n, best_r2h, 'rastrigin2'),]:
+            
+            best_bin, best_real, best_grad, best_newton, best_hill, problem = best_quintuple_p
+            title = f'Genetic_vs_Optimization_{problem}'
+            plt.title(title)
+            plt.bar(['Binary',
+                     'Real',
+                     'Gradient Descent',
+                     'Newton', 
+                     'Hill Climb'], 
+                     [best_bin[-1],
+                      best_real[-1],
+                      best_grad[-1],
+                      best_newton[-1],
+                      best_hill[-1]])
+            
+            plt.savefig(os.path.join('figures', problem, title))
+
+            plt.ylabel('The absolute error')
+
+            
+
+
+main(verbose=True, runs_genetic=20)
 ########################################################
 ########################################################
+
+
+
 
 
 ps_poses = [50, 100, 250]
@@ -611,169 +850,3 @@ for curr_ps in ps_poses:
                 best_config = [curr_ps,
                                 curr_prob_c,
                                 curr_prob_m]'''
-
-my_bfs = genetic_algorithm(test_problem_1,
-                            limits_p1[0],
-                            limits_p1[1],
-                            encoding=Encoding.BINARY,
-                            selection=Selection.ROULETTE,
-                            n=2,
-                            ps=250,#best_config[0],
-                            prob_c=0.99,#best_config[1],
-                            prob_m=0.1,#best_config[2],
-                            iterations=100,
-                            verbose=False)# of decision variables
-
-#debug(best_config, 'best config')
-
-
-
-'''
-# Setup para algoritmo genético
-def setup_ga(toolbox, n, encoding):
-    if encoding == 'binary':
-        # Codificación binaria
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create("Individual", list, fitness=creator.FitnessMin)
-        toolbox.register("attr_bool", np.random.randint, 2)
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, n=n)
-    else:
-        # Codificación real
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create("Individual", list, fitness=creator.FitnessMin)
-        toolbox.register("attr_float", np.random.uniform, -5.12, 5.12)
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=n)
-    
-    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("mate", tools.cxOnePoint if encoding == 'binary' else tools.cxSimulatedBinaryBounded, low=-5.12, up=5.12, eta=20.0)
-    toolbox.register("mutate", tools.mutFlipBit if encoding == 'binary' else tools.mutPolynomialBounded, low=-5.12, up=5.12, eta=20.0, indpb=0.2)
-    toolbox.register("select", tools.selTournament, tournsize=3)
-    toolbox.register("evaluate", test_problem_1 if n == 2 else rastrigin)
-
-    return toolbox
-
-# Ejecutar algoritmo
-def run_ga(toolbox, ngen=100, pop_size=50):
-    pop = toolbox.population(n=pop_size)
-    hof = tools.HallOfFame(1)
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("avg", np.mean)
-    stats.register("std", np.std)
-    stats.register("min", np.min)
-    stats.register("max", np.max)
-    
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.7, mutpb=0.2, ngen=ngen, stats=stats, halloffame=hof, verbose=True)
-    return pop, log, hof
-
-# Graficar convergencia
-def plot_convergence(log, title):
-    gen = log.select("gen")
-    avg = log.select("avg")
-    min_ = log.select("min")
-    
-    plt.plot(gen, avg, label='Promedio')
-    plt.plot(gen, min_, label='Mínimo')
-    plt.xlabel("Generaciones")
-    plt.ylabel("Fitness")
-    plt.title(title)
-    plt.legend()
-    plt.show()
-
-# Ejecutar para un problema de prueba
-toolbox = base.Toolbox()
-toolbox = setup_ga(toolbox, n=2, encoding='real')  # Cambiar 'real' a 'binary' según sea necesario
-pop, log, hof = run_ga(toolbox)
-
-plot_convergence(log, "Convergencia para el problema de prueba")
-
-# Setup para algoritmo genético
-def setup_ga(toolbox, n, encoding):
-    if encoding == 'binary':
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create("Individual", list, fitness=creator.FitnessMin)
-        toolbox.register("attr_bool", np.random.randint, 2)
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_bool, n=n)
-    else:
-        creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
-        creator.create("Individual", list, fitness=creator.FitnessMin)
-        toolbox.register("attr_float", np.random.uniform, -5.12, 5.12)
-        toolbox.register("individual", tools.initRepeat, creator.Individual, toolbox.attr_float, n=n)
-    
-    toolbox.register("population", tools.initRepeat, list, toolbox.individual)
-    toolbox.register("mate", tools.cxOnePoint if encoding == 'binary' else tools.cxSimulatedBinaryBounded, low=-5.12, up=5.12, eta=20.0)
-    toolbox.register("mutate", tools.mutFlipBit if encoding == 'binary' else tools.mutPolynomialBounded, low=-5.12, up=5.12, eta=20.0, indpb=0.2)
-    toolbox.register("select", tools.selTournament, tournsize=3)
-    toolbox.register("evaluate", test_problem_1 if n == 2 else rastrigin)
-
-    return toolbox
-
-# Ejecutar algoritmo genético para una corrida
-def run_ga(toolbox, ngen=100, pop_size=50):
-    pop = toolbox.population(n=pop_size)
-    hof = tools.HallOfFame(1)
-    stats = tools.Statistics(lambda ind: ind.fitness.values)
-    stats.register("avg", np.mean)
-    stats.register("std", np.std)
-    stats.register("min", np.min)
-    stats.register("max", np.max)
-    
-    pop, log = algorithms.eaSimple(pop, toolbox, cxpb=0.7, mutpb=0.2, ngen=ngen, stats=stats, halloffame=hof, verbose=False)
-    return pop, log, hof
-
-# Realizar 20 corridas para cada problema y codificación
-def run_20_experiments(toolbox, n_runs=20, ngen=100, pop_size=50):
-    results = []
-    for i in range(n_runs):
-        pop, log, hof = run_ga(toolbox, ngen, pop_size)
-        # Guardar los mejores valores de fitness de cada corrida
-        best_fitness = hof[0].fitness.values[0]
-        results.append(best_fitness)
-    return results
-
-# Graficar la convergencia (utilizando los logs de una de las corridas)
-def plot_convergence(log, title):
-    gen = log.select("gen")
-    avg = log.select("avg")
-    min_ = log.select("min")
-    
-    plt.plot(gen, avg, label='Promedio')
-    plt.plot(gen, min_, label='Mínimo')
-    plt.xlabel("Generaciones")
-    plt.ylabel("Fitness")
-    plt.title(title)
-    plt.legend()
-    plt.show()
-
-# Ejecutar el experimento completo para un problema y codificación específica
-def experiment(toolbox, encoding, problem_name):
-    print(f"Ejecutando 20 corridas para {problem_name} con codificación {encoding}")
-    results = run_20_experiments(toolbox)
-    mean_fitness = np.mean(results)
-    std_fitness = np.std(results)
-    min_fitness = np.min(results)
-    max_fitness = np.max(results)
-    
-    print(f"Media: {mean_fitness}")
-    print(f"Desviación estándar: {std_fitness}")
-    print(f"Mínimo: {min_fitness}")
-    print(f"Máximo: {max_fitness}")
-    
-    # Seleccionar la mejor corrida para graficar
-    _, log, _ = run_ga(toolbox)
-    plot_convergence(log, f"Convergencia - {problem_name} ({encoding})")
-
-    return results
-
-# Definir los problemas a ejecutar
-problems = [
-    ("Problema de prueba 1", 2),
-    ("Rastrigin n=2", 2),
-    ("Rastrigin n=5", 5)
-]
-
-# Configurar los experimentos y ejecutar para ambas codificaciones
-for problem_name, n in problems:
-    for encoding in ['binary', 'real']:
-        toolbox = base.Toolbox()
-        toolbox = setup_ga(toolbox, n, encoding)
-        experiment(toolbox, encoding, problem_name)'''
